@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "arg_parser.h": "c",
+        "stdbool.h": "c"
+    }
+}
