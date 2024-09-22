@@ -99,7 +99,7 @@ int get_type_param(char *param){
         return 1;
     }else if(strcmp(param, "-i") == 0 || strcmp(param, "--inactive") == 0){
         return 2;
-    }else if(strstr(":", param)){
+    }else if(strstr(param, ":")){
         return 3;
     }else return 0;
 }
@@ -108,20 +108,32 @@ int get_type_param(char *param){
  *
  * @brief pomocna funkce pro nacteni domeny nebo IP adresy s portem ze zadaneho parametru
  * 
- * @param param parametr
+ * @param param parametr obsahujici zaznam adresy collectoru
  * @param args struktura obsahujici zaznamy argumentu
  * 
  * @returns true pokud se povedlo jinak false
  * 
  */
 bool get_host_and_port(char *param, arguments *args){
-    /* Rozdeli vstupni retezec na zaklade rozdelovace ":" */
+    /* Rozdeli vstupni retezec na zaklade oddelovace ":" */
     args->host = strtok(param, ":");
-    args->port = atoi(strtok(NULL, ":"));
+    char *port_str = strtok(NULL, ":");
 
-    /* Pokud se povedlo ziskat pozadovane zaznamy, vraci se true */
-    if(args->host && args->port) return true;
+    /* Zda jsou oba tokeny spravne extrahovany */
+    if (args->host && port_str) {
 
+        /* Prevod na cislo */
+        args->port = atoi(port_str);
+
+        /* Pokud se prevod povedl */
+        if (args->port > 0) {
+            return true; 
+        } else {
+            return false;
+        }
+    }
+
+    /* Pokud neco selze vraci se false */
     return false;
 }
 
@@ -146,8 +158,46 @@ void print_error(int code){
     case 3:
         fprintf(stderr, "Incorrect usage of [hostname | IP address]:PORT!\n");
         break;
+    case 4:
+        fprintf(stderr, "PCAP file path is not specified!\n");
+        break;
+    case 5:
+        fprintf(stderr, "PORT is not specified!\n");
+        break;
+    case 6:
+        fprintf(stderr, "HOSTNAME or IP address is not specified\n");
+        break;
     default:
         break;
     }
+}
+
+/**
+ * 
+ * @brief funkce kontrolujici spravnou kombinaci zadanych parametru (musi byt zadan HOST, PORT a PCAP soubor)
+ *
+ * @param args struktura obsahujici vstupn parametry prikazove radky
+ * 
+ * @returns navratovy kod odpovidajici budto spravnemu nebo nespravnemu vlozeni parametru
+ * 
+ */
+int check_arguments(arguments *args){
+    bool flag = false;
+    
+    if(!args->file_path){
+        print_error(4);
+        flag = true;
+    }
+    if(!args->port){
+        print_error(5);
+        flag = true;
+    }
+    if(!args->host){
+        print_error(6);
+        flag = true;
+    }
+    if(flag) return 0;
+
+    return 1;
 }
 

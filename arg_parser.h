@@ -47,10 +47,47 @@ bool parse_arguments(arguments *args, char *arg[], int argc);
  */
 int check_arguments(arguments *args);
 
+/**
+ * 
+ * @brief pomocna funkce pro kontrolu nasledujiciho parametru, zdali existuje a ma spravny format (pro prepinace -i, -a)
+ * 
+ * @param next_pos index nasledujiciho parametru
+ * @param argc celkovy pocet parametru
+ * @param arg vstupni parametry
+ * 
+ * @returns true v pripade spravneho parametru jinak false
+ * 
+ */
 bool next_argument(int next_pos, int argc, char *arg[]);
 
+/**
+ * 
+ * @brief pomocna funkce pro ziskani o jaky typ parametru se jedna (prepinace -a|-i, host:port, ...) 
+ * 
+ * @param param aktualne zpracovavany parametr
+ * 
+ * @returns navratovy kod odpovidajici typu parametru
+ * 
+ */
 int get_type_param(char *param);
 
+/**
+ * 
+ * @brief funkce extrahujici HOST a PORT ze retezce, zaroven kontroluje jejich spravnost
+ * 
+ * @param param zpracovavany retezec
+ * @param args struktura obsahujici extrahovane parametry
+ * 
+ * @returns true v pripade spravneho zpracovani jinak false 
+ * 
+ */
 bool get_host_and_port(char *param, arguments *args);
 
+/**
+ * 
+ * @brief pomocna funkce pro vypis na stderr pri spatne kombinaci parametru, chybne zadane hodnoty, chybejici hodnoty, ...
+ * 
+ * @param code kod odpovidajici specificke chybe
+ *  
+ */
 void print_error(int code);

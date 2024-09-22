@@ -17,4 +17,4 @@ p2nprobe.o: p2nprobe.c
 
 # Vyčištění (odstraní objektové a spustitelné soubory)
 clean:
-	rm -f $(TARGET) p2nprobe.o
+	rm -f $(TARGET) p2nprobe.o arg_parser.o
