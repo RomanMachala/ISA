@@ -7,10 +7,7 @@
  */ 
 
 #include "arg_parser.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <ctype.h>
+
 
 bool parse_arguments(arguments *args, char *arg[], int argc){
     

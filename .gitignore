@@ -1,3 +1,5 @@
+hash_table.o
+exporter.o
 arg_parser.o
 p2nprobe.o
 p2nprobe

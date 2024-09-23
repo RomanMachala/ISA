@@ -1,3 +1,6 @@
+#ifndef ARG_PARSER_H
+#define ARG_PARSER_H
+
 /**
  *
  * @author Roman Machala
@@ -7,7 +10,10 @@
  */ 
 
 #include <stdbool.h>
-
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 /**
  *
@@ -91,3 +97,5 @@ bool get_host_and_port(char *param, arguments *args);
  *  
  */
 void print_error(int code);
+
+#endif
