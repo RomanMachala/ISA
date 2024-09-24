@@ -7,6 +7,15 @@
         "ip.h": "c",
         "stdio.h": "c",
         "signal.h": "c",
-        "tcp.h": "c"
-    }
+        "tcp.h": "c",
+        "string": "c",
+        "vector": "c",
+        "memory": "c",
+        "string_view": "c",
+        "system_error": "c",
+        "hash_table.h": "c",
+        "ether.h": "c",
+        "time.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

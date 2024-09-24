@@ -1,0 +1,218 @@
+\documentclass[11pt, a4paper, hidelinks]{article}[08.10.2023]
+    \usepackage[left=1.4cm, top=2.3cm, text={18.2cm, 25.2cm}]{geometry}
+    \usepackage[utf8]{inputenc}
+    \usepackage[czech]{babel}
+    \usepackage[IL2]{fontenc}
+    \usepackage{times}
+    \usepackage{hyperref}
+    \usepackage{listings}
+    \usepackage{xcolor}
+
+\lstdefinestyle{CStyle}{
+    language=C,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green},
+    stringstyle=\color{red},
+    identifierstyle=\color{black},
+    morekeywords={uint8_t, uint16_t, uint32_t},
+    showstringspaces=false,
+    tabsize=4,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    numbersep=5pt,
+}
+
+%Konec preambule
+
+
+\begin{document}
+
+\begin{titlepage}
+    \begin{center}
+        
+        {\Huge \textsc{Vysoké učení technické v Brně}\\[0.5em]}
+        {\huge \textsc{Fakulta informačních technologií}}
+        \vspace{\stretch{0.382}}
+    
+        {\LARGE Síťové aplikace\\[0.4em]
+        NetFlow v5 exportér}
+    
+        \vspace{\stretch{0.618}}
+        {\Large \hfill {Machala Roman (xmacha86)}}
+    \end{center}
+
+\end{titlepage}
+%Titulni strana
+
+\tableofcontents
+\pagebreak
+
+\section{Úvod}
+    NetFlow je síťový protokol vyvinut společností CISCO, který slouží k monitorování a analýze síťového provozu.
+    Umožňuje zachytávat jednotlivé pakety, které následně rozděluje do toků na základě např. zdrojové a cílové IP adresy.
+    Tyto data jsou zachycena kolektorem a následně pomocí protokolu UDP jsou zaslána do centrálního sběrače (kolektoru), kde
+    mohou být analyzována za účelem zjistit vytížení síte, anomálie nebo napříkald i bezpečnostních incidentů\cite{Cisco_2019}.
+
+    Pro protokol NetFlow existuje mnoho verzí, nicméně tato práce se 
+    zabývá pouze verzí v5, což je jedna z nejpoužívanějších verzí vůbec dostupná na drtivé většině
+    routerů různých výrobců.Tato verze byla navržena pro sběr informací síťového
+    provozu pouze na bázi IPv4. Pro podporu IPv6 je nutno vuyžívat vyšších verzí, jako je například NetFlow v9\cite{ManageEngine}.
+
+\subsection{IP Tok}
+    Jak již bylo zmíněno výše, protokol NetFlow pracuje s jednotlivými paketami, které rozděluje do \textbf{toků}.
+    Každý takový tok je určen unikátní kombinací následujících informací:
+    \begin{itemize}
+        \item{Zdrojová IP adresa}
+        \item{Cílová IP adresa}
+        \item{Zdrojový PORT}
+        \item{Cílový PORT}
+        \item{Typ služby (ToS)}
+        \item{Protokol 3 vrstvy}
+        \item{Rozhranní}
+    \end{itemize}
+
+    Všechny toky jsou pouze jednosměrné, proto například prohozením adres odesílatele a příjemce nevznikne
+    nový tok, jak je demonstrováno na obrázku \ref{priklad1}.
+    \vspace{2cm}
+
+    \begin{figure}[h!]
+        \begin{minipage}[t]{0.45\textwidth}
+            \subsection*{Tok 1:}
+            \begin{tabbing}
+                \hspace*{4cm}\=\hspace*{4cm}\= \kill
+                Zdrojová IP: \> 192.168.1.1 \\
+                Cílová IP: \> 10.0.0.1 \\
+                Zdrojový port: \> 12345 \\
+                Cílový port: \> 80 \\
+                Typ služby (ToS): \> 0 \\
+                Protokol 3 vrstvy: \> TCP \\
+                Rozhraní: \> eth0 \\
+            \end{tabbing}
+        \end{minipage}
+            \hfill
+        \begin{minipage}[t]{0.45\textwidth}
+            \subsection*{Tok 2:}
+            \begin{tabbing}
+                \hspace*{4cm}\=\hspace*{4cm}\= \kill
+                Zdrojová IP: \> 10.0.0.1 \\
+                Cílová IP: \> 192.168.1.1 \\
+                Zdrojový port: \> 80 \\
+                Cílový port: \> 12345 \\
+                Typ služby (ToS): \> 0 \\
+                Protokol 3 vrstvy: \> TCP \\
+                Rozhraní: \> eth0 \\
+            \end{tabbing}
+        \end{minipage}
+        \caption{Příklad 2 různých toků}
+        \label{priklad1}
+    \end{figure}
+
+    Z obrázku \ref{priklad1} může být taky patrné, že protokol nebere ohled na obsah jednotlivých paket, co se týče rozdělení paket do toků.
+    V rámci protokolu NetFlow v5 se s obsahem paket nijak nemanipuluje, uchovávají se ovšem další informace, které jsou vhodné pro 
+    statistické vyobrazení a monitorování síťového provozu.
+    
+    \subsection{Struktura toků/NetFlow v5 datagram}\label{Datagram}
+    Kromě klíčových informací sloužících k rozdělení jednotlivých paket do toků se ukládají i jiné informace o každém toku.
+    Výčet těchto informací je vyobrazen jako struktura v jazyce C na obrázku \ref{netflowstruct}. V tomto formátu jsou jednotlivé toky
+    pomocí UDP protokolu odeslány na kolektor. 
+    
+    Jelikož je používán protokol UDP pro export datagramů, je možné, že některé datagramy mohou být 
+    ztraceny. Z tohoto důvodu novější verze tohoto protokolu, přesněji verze 5, 7 a 8 obsahuje hlavička, dále popsána na obrázku \ref{netflowhdr}, kontrolní číslo toku (flow control number), které je 
+    rovno kontrolnímu číslu předešlého toku + počet toků v předešlém datagramu. Při přijetí nového datagramu tak kolektor může zkontrolovat, zda došlo 
+    ke ztrátě toků\cite{Cisco_datagram}\cite{IBM_header}.
+
+    \begin{figure}[h!]
+        \centering
+        \begin{lstlisting}[style=CStyle]
+            typedef struct NetFlowv5 {
+                uint32_t srcaddr;       /* Source IP address */
+                uint32_t dstaddr;       /* Destination IP address */
+                uint32_t nexthop;       /* IP address of next hop router */
+                uint16_t input;         /* SNMP index of input interface */
+                uint16_t output;        /* SNMP index of output interface */
+                uint32_t dPkts;         /* Packets in the flow */
+                uint32_t dOctets;       /* Total number of Layer 3 bytes */
+                uint32_t first;         /* SysUptime at start of flow */
+                uint32_t last;          /* SysUptime at the time the last packet */
+                uint16_t srcport;       /* TCP/UDP source port number */
+                uint16_t dstport;       /* TCP/UDP destination port number */
+                uint8_t pad1;           /* Unused (zero) bytes */
+                uint8_t tcp_flags;      /* Cumulative OR of TCP flags */
+                uint8_t prot;           /* IP protocol type (for example, TCP = 6) */
+                uint8_t tos;            /* IP type of service (ToS) */
+                uint16_t src_as;        /* Autonomous system number of the source */
+                uint16_t dst_as;        /* Autonomous system number of the dest */
+                uint8_t src_mask;       /* Source address prefix mask bits */
+                uint8_t dst_mask;       /* Destination address prefix mask bits */
+                uint16_t pad2;          /* Unused (zero) bytes */
+            } netflowv5;
+        \end{lstlisting}
+        \caption{NetFlow v5 tělo datagramu}
+        \label{netflowstruct}
+    \end{figure}
+
+    \begin{figure}[h!]
+        \centering
+        \begin{lstlisting}[style=CStyle]
+            typedef struct NetFlowHeader {
+                uint16_t version;            /* NetFlow export format version num */
+                uint16_t count;              /* Number of exported flows */
+                uint32_t sysUptime;          /* Current time in ms since start */
+                uint32_t unix_secs;          /* Current count of seconds since CUT */
+                uint32_t unix_nsecs;         /* Residual nanoseconds since CUT */
+                uint32_t flow_sequence;      /* Sequence cnt of total flows seen */
+                uint8_t engine_type;         /* Type of flow-switching engine */
+                uint8_t engine_id;           /* Slot num of flow-switching engine */
+                uint16_t sampling_interval;  /* Sampling mode + interval (2b - 14b) */
+            } NetFlowHeader;
+        \end{lstlisting}
+        \caption{NetFlow v5 hlavička datagramu}
+        \label{netflowhdr}
+    \end{figure}
+
+    \pagebreak
+    \subsection{Rozdíly v implementaci}
+    V této sekci jsou popsány limitace procesu návrhu a implementace exportéru pro protokol NetFlow v5. Tento exportér 
+    zpracovává pakety z poskytnutého PCAP souboru. Z tohoto důvodu se s implementací řeší i různé omezení. Následující
+    výčet položek struktury datagramu, popsanou v \ref{Datagram}, jsou z důvodu načítání paket z PCAP souboru nedostupné:
+
+    \begin{enumerate}
+        \item{IP adresa routeru dalšího skoku}
+        \item{SNMP index vstupního Rozhranní}
+        \item{SNMP index výstupního Rozhranní}
+        \item{SysUptime od začátku toku - doba od spuštění zařízení na kterém byly zachycenz pakety}
+        \item{SysUptime na konci přijetí posledního paketu - doba od spuštění zařízení až po zachycení poslední pakety}
+        \item{Číslo autonomního systému zdroje}
+        \item{Číslo autonomního systému cíle}
+        \item{Prefix masky zdrojové adresy}
+        \item{Prefix masky cílové adresy}
+    \end{enumerate}
+
+    Kromě tohoto se implementovaný exportér zaměřuje pouze na analýzu TCP paketů. Jednotlivé detaily jsou přiblíženy u samotné implementace.
+
+
+    \section{Návrh aplikace}
+    \subsection{Logické rozdělení aplikace}
+
+    \section{Přiblíženní implementace}
+    \subsection{Zpracování argumentů}
+    \subsection{Hashovací tabulka}
+    \subsection{Logika exportéru}
+
+    \section{Testování aplikace}
+    \subsection{Návrh testů}
+    \subsection{Referenční programy a jejich použití}
+    \subsection{Vyhodnocení testování}
+
+    \section{Návod na použití}
+
+    \section{Závěr}
+
+    \pagebreak
+
+    \bibliographystyle{bib-styles/Pysny/czplain}
+    \bibliography{manual}
+
+\end{document}

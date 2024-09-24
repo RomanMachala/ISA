@@ -49,6 +49,7 @@ typedef struct NetFlowv5{
     uint8_t src_mask;       /* Source address prefix mask bits */
     uint8_t dst_mask;       /* Destination address prefix mask bits */
     uint16_t pad2;          /* Unused (zero) bytes */
+    uint32_t current_time;  /* Pomocna promenna pro "simulaci" aktualniho casu (lehci kontrola timeoutu) */
 } netflowv5;
 
 /**
@@ -103,8 +104,10 @@ void update_flow(netflowv5 *first, netflowv5 *second);
  * @param flows hashovaci tabulka obsahujici informace o vsech tocich
  * @param current_flow novy tok pro vlozeni do tabulky (nebo pro slouceni s jinym)
  * 
+ * @returns vraci ukazatel na nove vlozeny tok
+ * 
  */
-void insert_into_table(netflowv5 **flows, netflowv5 *current_flow);
+netflowv5 *insert_into_table(netflowv5 **flows, netflowv5 *current_flow);
 
 /**
  *
@@ -118,5 +121,7 @@ void clean_flows(netflowv5 **flows);
 void print_flows(netflowv5 **flows);
 
 void init(netflowv5 **flows);
+
+netflowv5 *get_flow(netflowv5 **flows,  netflowv5 *flow);
 
 #endif

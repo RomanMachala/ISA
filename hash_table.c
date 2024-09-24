@@ -64,17 +64,17 @@ void update_flow(netflowv5 *first, netflowv5 *second){
     first->tcp_flags |= second->tcp_flags;
 
     /* Jine zaznamy o toku jsou nemenne (srcaddr, dstaddr, ...) */
-    free(second); /* Uvolnime pamet pro druhy tok, protoze doslo ke jejich slouzeni */
+    /* free(second); */ /* Uvolnime pamet pro druhy tok, protoze doslo ke jejich slouzeni */
 }
 
-void insert_into_table(netflowv5 **flows, netflowv5 *current_flow){
+netflowv5 *insert_into_table(netflowv5 **flows, netflowv5 *current_flow){
     int hash = hash_function(current_flow);
 
     /* Pokud zaznam jeste neexistuje */
     if(!flows[hash]){
         /* Vlozime jej do tabulky */
         flows[hash] = current_flow;
-        return;
+        return flows[hash];
     }
 
     /* Pokud zaznam jiz existuje, zkontrolujeme, zda se jedna o stejny zaznam nebo doslo ke kolizi hashu */
@@ -90,6 +90,7 @@ void insert_into_table(netflowv5 **flows, netflowv5 *current_flow){
         update_flow(flows[hash], current_flow);
     }
 
+    return flows[hash];
 }
 
 /**
@@ -138,6 +139,18 @@ void init(netflowv5 **flows){
     for(int i = 0; i < MAX_FLOW_LENGTH; i++){
         flows[i] = NULL;
     }
+}
+
+netflowv5 *get_flow(netflowv5 **flows, netflowv5 *flow){
+    int hash = hash_function(flow);
+
+    while(hash < MAX_FLOW_LENGTH){
+        if(compare_flows(flows[hash], flow)) return flows[hash];
+
+        hash = (hash + 1) % MAX_FLOW_LENGTH;
+    }
+
+    return NULL;
 }
 
 

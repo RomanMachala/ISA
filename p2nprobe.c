@@ -19,6 +19,8 @@
  * 
  * @brief funkce zachycujici signal Ctrl-C
  * 
+ * @param sig signal
+ * 
  */
 void handle_signal(int sig){
     exit(0);
@@ -36,9 +38,11 @@ int main(int argc, char *argv[]){
 
 
     netflowv5 *flows[MAX_FLOW_LENGTH];  /* Inicializace hashovaci tabulky */
-    init(flows);
+    bool result = true;
+    packet_handling handler = {flows, &args, &result};
 
-    start_extraction(flows, &args);
+    init(flows);
+    start_extraction(&handler);
 
     /* print_flows(flows); */
 

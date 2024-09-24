@@ -3,3 +3,9 @@ exporter.o
 arg_parser.o
 p2nprobe.o
 p2nprobe
+manual.aux
+manual.bbl
+manual.blg
+manual.log
+manual.out
+manual.toc
