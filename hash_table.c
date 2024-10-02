@@ -7,6 +7,7 @@
  */
 
 #include "hash_table.h"
+#include "datagram.h"
 
 
 /**
@@ -23,15 +24,14 @@ int hash_function(netflowv5 *flow){
     hash ^= flow->dstaddr;
     hash ^= (flow->srcport << 16);
     hash ^= (flow->dstport << 16);
-    hash ^= (flow->tos < 24);
-    hash ^= (flow->input << 8);
+    hash ^= (flow->prot << 16);
 
     return hash % MAX_FLOW_LENGTH;
 }
 
 /**
  * 
- * @brief funkce porovnavajici polozky 2 toku
+ * @brief funkce porovnavajici polozky 2 toku, volajici musi zajistit, ze ani 1 tok neni NULL
  * 
  * @param first tok 1
  * @param second tok 2
@@ -40,9 +40,10 @@ int hash_function(netflowv5 *flow){
  * 
  */
 bool compare_flows(netflowv5 *first, netflowv5 *second){
-    /* Porovnava pouze informace, ktere jsou potreba pro identifikaci toku, vice v hlavickovem souboru */
-    return (first->srcaddr == second->srcaddr && first->dstaddr == second->dstaddr && first->srcport == second->srcport
-    && first->dstport == second->dstport && first->tos == second->tos && first->input == second->input);
+
+
+    return ((first->srcaddr == second->srcaddr && first->dstaddr == second->dstaddr && first->srcport == second->srcport
+    && first->dstport == second->dstport && first->prot == second->prot));
 }
 
 /**
@@ -64,33 +65,45 @@ void update_flow(netflowv5 *first, netflowv5 *second){
     first->tcp_flags |= second->tcp_flags;
 
     /* Jine zaznamy o toku jsou nemenne (srcaddr, dstaddr, ...) */
-    /* free(second); */ /* Uvolnime pamet pro druhy tok, protoze doslo ke jejich slouzeni */
 }
 
 netflowv5 *insert_into_table(netflowv5 **flows, netflowv5 *current_flow){
-    int hash = hash_function(current_flow);
 
-    /* Pokud zaznam jeste neexistuje */
+    int hash = hash_function(current_flow); /* ziska hash */
+
+    /* Pokud zadny zaznam neexistuje, vlozime jej do tabulky */
     if(!flows[hash]){
-        /* Vlozime jej do tabulky */
         flows[hash] = current_flow;
         return flows[hash];
     }
 
-    /* Pokud zaznam jiz existuje, zkontrolujeme, zda se jedna o stejny zaznam nebo doslo ke kolizi hashu */
-    while(hash < MAX_FLOW_LENGTH){
-        /* Pokud jiz jsme narazili na volny zaznam nebo na stejnou polozku ukoncime prochazeni */
-        if(!flows[hash] || compare_flows(flows[hash], current_flow)) break;
-        hash = (hash + 1) % MAX_FLOW_LENGTH;    /* Inkrementace hashe pro posun na dalsi polozku */
+    /* Pokud jiz na danem hashi existuje zaznam, vlozime zaznam na vhodne misto */
+
+    /* zjistime, zdali zaznam jiz v tabulce neni */
+    netflowv5 *old_flow = get_flow(flows, current_flow);
+
+    if(old_flow){   /* Pokud zaznam existuje */
+        update_flow(old_flow, current_flow);
+        free(current_flow);
+        current_flow = NULL;
+        return old_flow;
     }
 
-    if(!flows[hash]){
-        flows[hash] = current_flow;    /* Vlozime novy tok na nejblizsi volne misto */
-    }else{
-        update_flow(flows[hash], current_flow);
+    int temp_hash = hash;
+    while(temp_hash < MAX_FLOW_LENGTH){
+        temp_hash = (temp_hash + 1) % MAX_FLOW_LENGTH;
+
+        if(!flows[temp_hash]){
+            flows[temp_hash] = current_flow;
+            return flows[temp_hash];
+        }else if(temp_hash == hash){
+            break;
+        }
+
     }
 
-    return flows[hash];
+    return NULL;
+    
 }
 
 /**
@@ -107,34 +120,6 @@ void clean_flows(netflowv5 **flows){
     }
 }
 
-/**
- *
- * @brief debugovaci funkce pro zobrazeni jednotlivych toku
- * 
- * @param flows hashovaci tabulka obsahujici jednotlive zaznamy o vsech tocich
- * 
- */ 
-void print_flows(netflowv5 **flows){
-    int counter = 1;
-    /* projdeme vsechny polozky v tabulce sekvencne */
-    for(int i = 0; i < MAX_FLOW_LENGTH; i++){
-        /* Pokud zaznam existuje */
-        if(flows[i]){
-            printf("Flow n.%d\n", counter++);
-
-            char IP[INET_ADDRSTRLEN];
-
-            struct in_addr addr;
-            addr.s_addr = htonl(flows[i]->srcaddr);
-            inet_ntop(AF_INET, &addr, IP, sizeof(IP));
-            printf("\tSrcIP addr:\t\t\t%s\n", IP);
-            addr.s_addr = htonl(flows[i]->dstaddr);
-            inet_ntop(AF_INET, &addr, IP, sizeof(IP));
-            printf("\tDstIP addr:\t\t\t%s\n", IP);
-        }
-    }
-}
-
 void init(netflowv5 **flows){
     for(int i = 0; i < MAX_FLOW_LENGTH; i++){
         flows[i] = NULL;
@@ -142,16 +127,46 @@ void init(netflowv5 **flows){
 }
 
 netflowv5 *get_flow(netflowv5 **flows, netflowv5 *flow){
-    int hash = hash_function(flow);
-
-    while(hash < MAX_FLOW_LENGTH){
-        if(compare_flows(flows[hash], flow)) return flows[hash];
-
-        hash = (hash + 1) % MAX_FLOW_LENGTH;
+    for(int i = 0; i < MAX_FLOW_LENGTH; i++){
+        if(flows[i]){
+            if(compare_flows(flows[i], flow)){
+                return flows[i];
+            }
+        }
     }
-
     return NULL;
 }
 
+void copy_flow(netflowv5 *flow1, netflowv5 *flow2){
+    
+    flow1->srcaddr      = flow2->srcaddr;       
+    flow1->dstaddr      = flow2->dstaddr;       
+    flow1->nexthop      = flow2->nexthop;       
+    flow1->input        = flow2->input;         
+    flow1->output       = flow2->output;         
+    flow1->dPkts        = flow2->dPkts;         
+    flow1->dOctets      = flow2->dOctets;       
+    flow1->first        = flow2->first;         
+    flow1->last         = flow2->last;          
+    flow1->srcport      = flow2->srcport;       
+    flow1->dstport      = flow2->dstport;       
+    flow1->pad1         = flow2->pad1;          
+    flow1->tcp_flags    = flow2->tcp_flags;     
+    flow1->prot         = flow2->prot;          
+    flow1->tos          = flow2->tos;           
+    flow1->src_as       = flow2->src_as;        
+    flow1->dst_as       = flow2->dst_as;        
+    flow1->src_mask     = flow2->src_mask;      
+    flow1->dst_mask     = flow2->dst_mask;      
+    flow1->pad2         = flow2->pad2;     
+
+}
+
+int abs(int num){
+    if(num < 0){
+        return -num;
+    }
+    return num;
+}
 
 

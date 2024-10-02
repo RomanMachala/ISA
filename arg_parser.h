@@ -27,6 +27,7 @@ typedef struct arguments{
     unsigned int inactive_timeout;      /* inaktivni timeout v sec */
     char *file_path;                    /* cesta k souboru obsahujici PCAP zaznamy */
     bool debug;                         /* flag udavajici DEBUG mod */
+    char *address_hostname;             /* Adresa kolektoru */
 } arguments;
 
 /**
@@ -97,5 +98,16 @@ bool get_host_and_port(char *param, arguments *args);
  *  
  */
 void print_error(int code);
+
+/**
+ *
+ * @brief pomocna funkce pro debugovani, vypisuje pouzite parametry a jejich hodnoty 
+ * 
+ * @param args struktura obsahujici parametry
+ * 
+ */
+void print_params(arguments *args);
+
+char *get_address_hostname(char *hostename);
 
 #endif

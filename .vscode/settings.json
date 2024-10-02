@@ -15,7 +15,8 @@
         "system_error": "c",
         "hash_table.h": "c",
         "ether.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "types.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

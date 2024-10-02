@@ -21,6 +21,9 @@
 #include "hash_table.h"
 #include "arg_parser.h"
 
+extern struct timeval tv;
+
+
 /**
  * 
  * @brief pomocna struktura pro predani packet_handler() funcki 
@@ -57,14 +60,14 @@ void packet_handler(uint8_t *user, const struct pcap_pkthdr *pkthdr, const uint8
 
 /**
  * 
- * @brief funkce zajistujici odeslani toku na kolektor
+ * @brief funkce pridavajici tok do setu pro export
  * 
- * @param flow tok pro odeslani na kolektor
+ * @param flow tok pro pridani
  * 
  * @returns true v pripade povedeneho odeslani, jinak false
  * 
  */
-bool export_flow(netflowv5 *flow, arguments *args);
+bool handle_flow(netflowv5 *flow, arguments *args);
 
 /**
  *
@@ -81,14 +84,13 @@ bool check_for_flags(netflowv5 *flow);
  * 
  * @brief pomocna funkce, ktera pred aktualizaci toku zjisti, zdali dany tok jiz nepresahl aktivni dobu
  * 
- * @param flow1 puvodni tok
- * @param flow2 novy tok, ktery ma byt sloucen s puvodnim tokem
+ * @param flow puvodni tok
  * @param timeout aktivni timeout v sekundach
  * 
  * @returns truen v pripade ze puvodni tok ma byt exportovan, jinak false - slozueni toku
  * 
  */
-bool check_for_active(netflowv5 *flow1, netflowv5 *flow2 ,int timeout);
+bool check_for_active(netflowv5 *flow1, netflowv5 *flow2,  int timeout);
 
 /**
  * 
@@ -100,7 +102,7 @@ bool check_for_active(netflowv5 *flow1, netflowv5 *flow2 ,int timeout);
  * @returns true v pripade ze tok je neaktivni, jinak false - nebude exportovan  
  * 
  */
-bool check_for_inactive(netflowv5 *flow ,int timeout);
+bool check_for_inactive(netflowv5 *flow1, netflowv5 *flow2, int timeout);
 
 
 /**
@@ -112,7 +114,7 @@ bool check_for_inactive(netflowv5 *flow ,int timeout);
  * @returns true v pripade uspesneho exportovani vsech neaktivnich toku, false v priapde chyby exportu
  * 
  */
-bool check_for_inactive_flows(netflowv5 **flows, arguments *args);
+bool check_for_expired_flows(netflowv5 **flows, netflowv5 *flow, arguments *args);
 
 /**
  * 
@@ -124,5 +126,7 @@ bool check_for_inactive_flows(netflowv5 **flows, arguments *args);
  * 
  */
 bool clean_exporting(netflowv5 **flows, arguments *args);
+
+bool export_datagram(arguments *args);
 
 #endif

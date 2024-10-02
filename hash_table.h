@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "arg_parser.h"
+
 
 
 #define MAX_FLOW_LENGTH 1009        /* Definuje maximalni mozny pocet toku v jednu chvili (prvocislo) */
@@ -36,8 +38,8 @@ typedef struct NetFlowv5{
     uint16_t output;        /* SNMP index of output interface */ 
     uint32_t dPkts;         /* Packets in the flow */
     uint32_t dOctets;       /* Total number of Layer 3 bytes in the packets of the flow */
-    uint32_t first;         /* SysUptime at start of flow */
-    uint32_t last;          /* SysUptime at the time the last packet of the flow was received */
+    int32_t first;         /* SysUptime at start of flow */
+    int32_t last;          /* SysUptime at the time the last packet of the flow was received */
     uint16_t srcport;       /* TCP/UDP source port number or equivalent */
     uint16_t dstport;       /* TCP/UDP destination port number or equivalent */
     uint8_t pad1;           /* Unused (zero) bytes */
@@ -49,7 +51,6 @@ typedef struct NetFlowv5{
     uint8_t src_mask;       /* Source address prefix mask bits */
     uint8_t dst_mask;       /* Destination address prefix mask bits */
     uint16_t pad2;          /* Unused (zero) bytes */
-    uint32_t current_time;  /* Pomocna promenna pro "simulaci" aktualniho casu (lehci kontrola timeoutu) */
 } netflowv5;
 
 /**
@@ -103,6 +104,7 @@ void update_flow(netflowv5 *first, netflowv5 *second);
  * 
  * @param flows hashovaci tabulka obsahujici informace o vsech tocich
  * @param current_flow novy tok pro vlozeni do tabulky (nebo pro slouceni s jinym)
+ * @param args struktura obsahujici vstupni parametry
  * 
  * @returns vraci ukazatel na nove vlozeny tok
  * 
@@ -118,10 +120,12 @@ netflowv5 *insert_into_table(netflowv5 **flows, netflowv5 *current_flow);
  */
 void clean_flows(netflowv5 **flows);
 
-void print_flows(netflowv5 **flows);
-
 void init(netflowv5 **flows);
 
 netflowv5 *get_flow(netflowv5 **flows,  netflowv5 *flow);
+
+void copy_flow(netflowv5 *flow1, netflowv5 *flow2);
+
+int abs(int num);
 
 #endif

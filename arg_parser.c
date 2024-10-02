@@ -8,6 +8,11 @@
 
 #include "arg_parser.h"
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+
 
 bool parse_arguments(arguments *args, char *arg[], int argc){
     
@@ -43,6 +48,10 @@ bool parse_arguments(arguments *args, char *arg[], int argc){
                 print_error(3);
                 return false;
             }
+            break;
+
+        case 4:
+            args->debug = true;
             break;
         }
         
@@ -98,6 +107,8 @@ int get_type_param(char *param){
         return 2;
     }else if(strstr(param, ":")){
         return 3;
+    }else if(strcmp(param, "-d") == 0 || strcmp(param, "--debug") == 0){
+        return 4;
     }else return 0;
 }
 
@@ -164,6 +175,9 @@ void print_error(int code){
     case 6:
         fprintf(stderr, "HOSTNAME or IP address is not specified\n");
         break;
+    case 7:
+        fprintf(stderr, "Host can't be reached!\n");
+        break;
     default:
         break;
     }
@@ -173,7 +187,7 @@ void print_error(int code){
  * 
  * @brief funkce kontrolujici spravnou kombinaci zadanych parametru (musi byt zadan HOST, PORT a PCAP soubor)
  *
- * @param args struktura obsahujici vstupn parametry prikazove radky
+ * @param args struktura obsahujici vstupni parametry prikazove radky
  * 
  * @returns navratovy kod odpovidajici budto spravnemu nebo nespravnemu vlozeni parametru
  * 
@@ -193,8 +207,60 @@ int check_arguments(arguments *args){
         print_error(6);
         flag = true;
     }
+
+    /* Prevedeme adresu hosta na ip adresu */
+    args->address_hostname = get_address_hostname(args->host);
+    if(!args->address_hostname){
+        print_error(7);
+        flag = true;
+    }
+
+
     if(flag) return 0;
 
     return 1;
+}
+
+void print_params(arguments *args){
+    printf("\t\tDebug mode active\n");
+    printf("Used params:\n\n");
+
+    /* Kontrola parametru jiz probehla, takze nemusime kontrolovat, jestli PCAP soubor a dalsi povinne byly zadany */
+
+    printf("\tIP|domainname:\t%s:%d\n", args->host, args->port);
+    printf("\tPCAPFile:\t%s\n", args->file_path);
+    printf("\tActive timeout is set to: %d\n", args->active_timeout);
+    printf("\tInactive timeout is set to: %d\n", args->inactive_timeout);
+    printf("\tHostname is %s\n", args->address_hostname);
+}
+
+char *get_address_hostname(char *hostename){
+    struct addrinfo hints, *res;
+    int status;
+    char *ipstr = (char *)malloc(INET_ADDRSTRLEN); 
+    if(!ipstr){
+        fprintf(stderr, "ERR: Allocation error\n");
+        return NULL;
+    }
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET; //IPv4
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((status = getaddrinfo(hostename, NULL, &hints, &res)) != 0) {
+        fprintf(stderr, "ERR: Getting addr info - %s\n", gai_strerror(status));
+        return NULL;
+    }
+
+    if (res != NULL) {
+        struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
+        void *addr = &(ipv4->sin_addr);
+
+        inet_ntop(res->ai_family, addr, ipstr, INET_ADDRSTRLEN);
+        freeaddrinfo(res); // free address info
+        return ipstr;
+    }
+
+    return NULL; 
 }
 

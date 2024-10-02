@@ -8,25 +8,28 @@
 
 
 #include "exporter.h"
+#include "datagram.h"
 
-char err_buff[PCAP_ERRBUF_SIZE];    /* error buffer pro pcap_open_offline() */
+char err_buff[PCAP_ERRBUF_SIZE];    /* error buffer pro pcap_open_offline() */  
+
+ProcessedFlows set;
+
 
 void packet_handler(uint8_t *user, const struct pcap_pkthdr *pkthdr, const uint8_t *packet){
 
     packet_handling *handler = (packet_handling *)user; /* Prevedeni uzivatelskeho parametru zpet na strukturu packet_handling */
 
-    /* Pred kazdym zpracovanim paket projde vsechny stavajici toky a zjisti, jestli nejsou neaktivni */
-    if(!check_for_inactive_flows(handler->flows, handler->args  )){
-        handler->result = false;
-        return;
-    }
-
     struct ethhdr *ether_header = (struct ethhdr*)packet;
-    if(ether_header->h_proto != ETHERTYPE_IP) return;   /* Pokud se nejedna o IP paket nezpracovavame */
+    if(ntohs(ether_header->h_proto) != ETHERTYPE_IP){
+        return;
+    }   /* Pokud se nejedna o IP paket nezpracovavame */
 
     /* pro zisk ip hlavicky musime preskocit ethernet hlavicku */
     struct iphdr *ip_header = (struct iphdr *)(packet + sizeof(struct ethhdr));
-    if(!(ip_header->protocol == IPPROTO_TCP)) return;   /* Pokud se nejedna o TCP protokol, nezpracovavame */
+    if(!(ip_header->protocol == IPPROTO_TCP)){
+        return;
+    }   /* Pokud se nejedna o TCP protokol, nezpracovavame */
+
 
     /* ziskame TCP hlavicku */
     struct tcphdr *tcp_header = (struct tcphdr *)(packet + sizeof(struct ethhdr) + (ip_header->ihl * 4));
@@ -36,9 +39,6 @@ void packet_handler(uint8_t *user, const struct pcap_pkthdr *pkthdr, const uint8
         fprintf(stderr, "Couldn't create another flow due to malloc error!\n");
         return;
     }
-
-    uint32_t packet_time_s = (pkthdr->ts.tv_sec * 1000); 
-    /* Zisk casu zachyceni paketu */
     
     /* Vyplnime vsechny informace z prijate pakety, pokud nelze specifikovat nechavame prazdne*/
     new_flow->srcaddr = ip_header->saddr;
@@ -48,8 +48,8 @@ void packet_handler(uint8_t *user, const struct pcap_pkthdr *pkthdr, const uint8
     new_flow->dOctets = ntohs(ip_header->tot_len);  /* Velikost IP hlavicky a dat */
 
     /* Aktualizace zachyceni casu */
-    new_flow->first = packet_time_s;
-    new_flow->last = packet_time_s;
+    new_flow->first = pkthdr->ts.tv_sec - tv.tv_sec;
+    new_flow->last = pkthdr->ts.tv_sec - tv.tv_sec;
 
     /* Source a destination port */
     new_flow->srcport = tcp_header->th_sport;
@@ -59,32 +59,13 @@ void packet_handler(uint8_t *user, const struct pcap_pkthdr *pkthdr, const uint8
     new_flow->prot = ip_header->protocol;
     new_flow->tos = ip_header->tos;
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL); /* Ziska aktualni cas */
-
-    new_flow->current_time = tv.tv_sec; /* Zajimaji nas pouze sekundy */
-
-    netflowv5 *inserted = NULL;
-    bool export = false;
-    bool result = true;
-
-    netflowv5 *flow = get_flow(handler->flows, new_flow);    
-    if(flow && check_for_active(flow, new_flow, handler->args->active_timeout)){   /* Pokud zaznam jiz existuje a vyprsel aktivni timeout */
-        result = export_flow(flow, handler->args);  /* Exportneme stary tok */
-    }
-
-    inserted = insert_into_table(handler->flows, new_flow); /* Vytvorime novy tok */
-    export = check_for_flags(inserted);
-
-    if(export){
-        result = export_flow(inserted, handler->args);
-        
-    }
-
+    bool result = check_for_expired_flows(handler->flows, new_flow, handler->args);
     if(!result){
-        (*handler->result) = false; /* Nastavime flag pro udani nepodareneho odeslani toku */
+        handler->result = false;
         return;
     }
+    insert_into_table(handler->flows, new_flow);
+
 
 }
 
@@ -123,32 +104,38 @@ bool check_for_flags(netflowv5 *flow){
     /* aktivni a neaktivni timeout jsou kontrolovany pri zachyceni jednotlivych paket */
 }
 
-bool export_flow(netflowv5 *flow, arguments *args){
-    printf("Exporting a flow!\n");
+bool handle_flow(netflowv5 *flow, arguments *args){
+    add_flow(flow); /* prida tok do setu */
+    if(export_set()){
+        return export_datagram(args);    /* Pokud jiz je pozadovany pocet toku v setu */
+    }      
+
     return true;
 }
 
 bool check_for_active(netflowv5 *flow1, netflowv5 *flow2, int timeout){
-    /* Aktivni timeout stanovuje dobu, po ktere je tok odeslan na kolektor i kdyz je tok stale aktivni */
 
-    return !((flow1->current_time - flow2->current_time) < timeout);
+    return abs(abs(flow1->first) - abs(flow2->first)) > timeout; 
+    
 }
 
-bool check_for_inactive(netflowv5 *flow ,int timeout){
-    /* Neaktivni timeout stanovuje dobu, po kterou je tok neaktivni, pokud presahne danou hranici, je uzavren a odeslan na kolektor */
-
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-
-    return !((tv.tv_sec - flow->current_time) < timeout);
+bool check_for_inactive(netflowv5 *flow1, netflowv5 *flow2 ,int timeout){
+    return abs(abs(flow1->last) - abs(flow2->first)) > timeout;
 }
 
-bool check_for_inactive_flows(netflowv5 **flows, arguments *args){
-    for(int i = 0; i < MAX_FLOW_LENGTH; i++){
-        if(flows[i] && check_for_inactive(flows[i], args->active_timeout)){
-            bool result = export_flow(flows[i], args);
-            if(!result) return false;
-        }
+bool check_for_expired_flows(netflowv5 **flows, netflowv5 *flow, arguments *args){
+    netflowv5 *old_flow = get_flow(flows, flow);    /* Ziska jiz existujici flow */
+
+    if(!old_flow) return true;  /* Pokud takova flow neexistuje, neni co resit */
+
+    if(check_for_active(old_flow, flow, args->active_timeout)){
+        printf("Vyprsel aktivni timeout, rozdil je:%d\n\n", abs(abs(old_flow->first) - abs(flow->last)));
+        bool result = handle_flow(old_flow, args);
+        if(!result) return false;
+    }else if(check_for_inactive(old_flow, flow, args->inactive_timeout)){
+        printf("Vyprsel inaktivni timeout, rozdil je: %d\n\n", abs(abs(old_flow->last)- abs(flow->first)));
+        bool result = handle_flow(old_flow, args);
+        if(!result) return false;
     }
 
     return true;
@@ -157,9 +144,46 @@ bool check_for_inactive_flows(netflowv5 **flows, arguments *args){
 bool clean_exporting(netflowv5 **flows, arguments *args){
     for(int i = 0; i < MAX_FLOW_LENGTH; i++){
         if(flows[i]){
-            bool result = export_flow(flows[i], args);
+            bool result = handle_flow(flows[i], args);
             if(!result) return false;
         }
+    }
+
+    return true;
+}
+
+bool export_datagram(arguments *args){
+
+    /* Prvni ziskame IP adresu kolektoru */
+
+    
+
+    /* TODO logika pro odeslani UDP paket */
+
+
+    /* Resetujeme counter toku v setu */
+    set.count = 0;
+
+
+
+    /* Je treba uvolnit vsechny alokovane mista */
+
+    for(int i = 0; i < MAX_NUMBER_FLOWS; i++){
+        if(!set.flows[i]){
+            continue;
+        }
+        //free(set.flows[i]); 
+        print_ip_addr("src", set.flows[i]->srcaddr);
+        printf(":%u", ntohs(set.flows[i]->srcport));
+        printf("\t\t");
+        print_ip_addr("dst", set.flows[i]->dstaddr);
+        printf(":%u", ntohs(set.flows[i]->dstport));
+        printf("\n");
+        printf("Number of pacekts: %d\n", set.flows[i]->dPkts);
+        printf("Bytes: %dB\n", set.flows[i]->dOctets);
+        printf("\n\n");
+        free(set.flows[i]);
+        set.flows[i] = NULL;
     }
 
     return true;

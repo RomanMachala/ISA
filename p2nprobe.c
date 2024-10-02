@@ -14,6 +14,7 @@
 #include "arg_parser.h"
 #include "hash_table.h"
 #include "exporter.h"
+#include "datagram.h"
 
 /**
  * 
@@ -26,8 +27,11 @@ void handle_signal(int sig){
     exit(0);
 }
 
+struct timeval tv;
 
 int main(int argc, char *argv[]){
+
+    gettimeofday(&tv, NULL);    /* Simulace SysUptime */
 
     signal(SIGINT, handle_signal);  /* V pripade stisknuti Ctrl-C dojde k zavolani funkce handle_signal a dojde k adekvatnimu ukonceni programu */
 
@@ -36,6 +40,7 @@ int main(int argc, char *argv[]){
 
     if(!check_arguments(&args)) return 1;   /* Pokud nejsou zadany pozadovane parametry (host, port, PCAP soubor) */
 
+    if(args.debug) print_params(&args);
 
     netflowv5 *flows[MAX_FLOW_LENGTH];  /* Inicializace hashovaci tabulky */
     bool result = true;
@@ -44,9 +49,13 @@ int main(int argc, char *argv[]){
     init(flows);
     start_extraction(&handler);
 
-    /* print_flows(flows); */
+    
+
+    export_datagram(&args);
 
     clean_flows(flows);
+
+    free(args.address_hostname);
 
 
     return 0;
