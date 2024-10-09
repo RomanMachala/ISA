@@ -10,7 +10,7 @@ CFLAGS = -Wall -O2
 
 # Závislosti: jaké soubory jsou potřeba pro vytvoření cíle
 $(TARGET): p2nprobe.o arg_parser.o exporter.o hash_table.o datagram.o
-	$(CC) $(CFLAGS) -o $(TARGET) p2nprobe.o arg_parser.o exporter.o hash_table.o datagram.o -lpcap
+	$(CC) $(CFLAGS) -o $(TARGET) p2nprobe.o arg_parser.o exporter.o hash_table.o datagram.o -lpcap -lrt
 
 # preklad
 p2nprobe.o: p2nprobe.c

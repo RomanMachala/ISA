@@ -52,29 +52,30 @@
 \section{Úvod}
     NetFlow je síťový protokol vyvinut společností CISCO, který slouží k monitorování a analýze síťového provozu.
     Umožňuje zachytávat jednotlivé pakety, které následně rozděluje do toků na základě např. zdrojové a cílové IP adresy.
-    Tyto data jsou zachycena kolektorem a následně pomocí protokolu UDP jsou zaslána do centrálního sběrače (kolektoru), kde
-    mohou být analyzována za účelem zjistit vytížení síte, anomálie nebo napříkald i bezpečnostních incidentů\cite{Cisco_2019}.
+    Tyto data jsou pomocí protokolu UDP z exportéru odeslána do centrálního sběrače (kolektoru), kde
+    mohou být analyzována za účelem zjištění vytížení síte, anomálií nebo napříkald i bezpečnostních incidentů\cite{Cisco_2019}.
 
     Pro protokol NetFlow existuje mnoho verzí, nicméně tato práce se 
-    zabývá pouze verzí v5, což je jedna z nejpoužívanějších verzí vůbec dostupná na drtivé většině
-    routerů různých výrobců.Tato verze byla navržena pro sběr informací síťového
+    zabývá pouze verzí v5, což je jedna z nejpoužívanějších verzí vůbec, dostupná na drtivé většině
+    zařízení různých výrobců. Tato verze byla navržena pro sběr informací síťového
     provozu pouze na bázi IPv4. Pro podporu IPv6 je nutno vuyžívat vyšších verzí, jako je například NetFlow v9\cite{ManageEngine}.
 
 \subsection{IP Tok}
     Jak již bylo zmíněno výše, protokol NetFlow pracuje s jednotlivými paketami, které rozděluje do \textbf{toků}.
     Každý takový tok je určen unikátní kombinací následujících informací:
     \begin{itemize}
-        \item{Zdrojová IP adresa}
-        \item{Cílová IP adresa}
-        \item{Zdrojový PORT}
-        \item{Cílový PORT}
+        \item{\textbf{Zdrojová IP adresa}}
+        \item{\textbf{Cílová IP adresa}}
+        \item{\textbf{Zdrojový PORT}}
+        \item{\textbf{Cílový PORT}}
         \item{Typ služby (ToS)}
-        \item{Protokol 3 vrstvy}
+        \item{\textbf{Protokol 3 vrstvy}}
         \item{Rozhranní}
     \end{itemize}
 
     Všechny toky jsou pouze jednosměrné, proto například prohozením adres odesílatele a příjemce nevznikne
-    nový tok, jak je demonstrováno na obrázku \ref{priklad1}.
+    nový tok, jak je demonstrováno na obrázku \ref{priklad1}. V rámci této implementace popsané v této práci jsou ovšem za unikátní identifikátory uvažovány
+    pouze \textbf{tučně} vyznačené infromace. Více info o rozdílech a limitacích v sekci \ref{limitace}.
     \vspace{2cm}
 
     \begin{figure}[h!]
@@ -173,34 +174,54 @@
     \end{figure}
 
     \pagebreak
-    \subsection{Rozdíly v implementaci}
+    \subsection{Rozdíly v implementaci}\label{limitace}
     V této sekci jsou popsány limitace procesu návrhu a implementace exportéru pro protokol NetFlow v5. Tento exportér 
-    zpracovává pakety z poskytnutého PCAP souboru. Z tohoto důvodu se s implementací řeší i různé omezení. Následující
-    výčet položek struktury datagramu, popsanou v \ref{Datagram}, jsou z důvodu načítání paket z PCAP souboru nedostupné:
+    zpracovává pakety z poskytnutého PCAP souboru. Z tohoto důvodu se s implementací řeší i různé omezení. 
+    
+    Implementovaný exportér pracuje pouze s informacemi zjistitelnými analýzou zachycených paket s poskytnutém PCAP souboru.
+    Mezi nezjistitelné položky tak patří:
 
-    \begin{enumerate}
-        \item{IP adresa routeru dalšího skoku}
-        \item{SNMP index vstupního Rozhranní}
-        \item{SNMP index výstupního Rozhranní}
-        \item{SysUptime od začátku toku - doba od spuštění zařízení na kterém byly zachycenz pakety}
-        \item{SysUptime na konci přijetí posledního paketu - doba od spuštění zařízení až po zachycení poslední pakety}
-        \item{Číslo autonomního systému zdroje}
-        \item{Číslo autonomního systému cíle}
-        \item{Prefix masky zdrojové adresy}
-        \item{Prefix masky cílové adresy}
-    \end{enumerate}
+    \begin{itemize}
+        \item{Adresa routeru dalšího skoku}
+        \item{SNMP indexy vstupního a výstupního zařízení}
+        \item{Čísla autonomních sýstémů zdrojové a cílové sítě}
+        \item{Počet bitů v maskovacím prefixu zdrojové a cílové adresy}
+        \item{Typ a ID zařízení zpracovávající toky}
+        \item{Sampling mód a interval}
+    \end{itemize}
 
-    Kromě tohoto se implementovaný exportér zaměřuje pouze na analýzu TCP paketů. Jednotlivé detaily jsou přiblíženy u samotné implementace.
+    
 
+    \section{Návrh a implementace}
+    Samotná aplikace je rozdělena do několika větších celků, kde každý celek zajišťuje určitou část aplikace. Jednotlivé celky jsou implementovány v 
+    samostatných \texttt{.c} a \texttt{.h} souborech. Jednotlivé celky dohromady potom tvoří výslednou aplikaci pracující jako exportér
+    NetFlow v5 toků.
 
-    \section{Návrh aplikace}
-    \subsection{Logické rozdělení aplikace}
-
-    \section{Přiblíženní implementace}
     \subsection{Zpracování argumentů}
-    \subsection{Hashovací tabulka}
-    \subsection{Logika exportéru}
+    Tento celek se stará o zpracování argumentů příkazové řádky, poskytnuté uživatelem, převodem těchto argumentů
+    do jejich očekávané podoby (pokud je to potřeba), nebo ke kontrole jejich správnosti.
 
+    \begin{table}[ht]
+        \centering
+        \begin{tabular}{|l|l|l|}
+        \hline
+        \textbf{Parametr}         & \textbf{Popis}                                                  & \textbf{Povinný}  \\ \hline
+        \texttt{hostname:port}    & IP adresa a port kolektoru                                      & Ano              \\ \hline
+        \texttt{pcap\_soubor}     & PCAP soubor obsahující pakety pro analýzu                       & Ano              \\ \hline
+        \texttt{-a | --active}         & Aktivní timeout v sekundách                                     & Ne               \\ \hline
+        \texttt{-i | --inactive}         & Neaktivní timeout v sekundách                                   & Ne               \\ \hline
+        \texttt{-d | --debug}               & Povolit ladicí výstup                                           & Ne               \\ \hline
+        \end{tabular}
+        \caption{Parametry aplikace}
+        \label{parametry}
+    \end{table}
+        
+    V tabulce \ref{parametry} je možno vidět, jaké parametry aplikace podporuje. Na jejich pořadí nezáleží, ovšem povinné parametry
+    musejí být vždy přítomny. Pokud nejsou stanoveny parametry \textbf{-a} a \textbf{-i}, tedy aktivní a neaktivní timeout, pracuje se s 
+    defaultní hodnotou 60 sekund.
+
+    \subsection{Zpracování paket ze souboru PCAP}
+    Pro zpracování jednotlivých paket a jejich manipulace s nimi je prováděna výhradně za pomocí knihovny PCAP\cite{Pcap_general}.
     \section{Testování aplikace}
     \subsection{Návrh testů}
     \subsection{Referenční programy a jejich použití}

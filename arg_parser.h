@@ -6,6 +6,7 @@
  * @author Roman Machala
  * @date 21.09.2024
  *
+ * @brief hlavickovy soubor pro logiku zpracovani vstupnich parametru programu
  *   
  */ 
 
@@ -108,6 +109,15 @@ void print_error(int code);
  */
 void print_params(arguments *args);
 
-char *get_address_hostname(char *hostename);
+/**
+ * 
+ * @brief funkce prevadejici domenu na ip adresu
+ * 
+ * @param hostname domena
+ * 
+ * @returns ip adresu ve formatu retezce
+ * 
+ */
+char *get_address_hostname(char *hostname);
 
 #endif

@@ -3,9 +3,10 @@
 
 /**
  * 
- * @brief
  * @author Roman Machala
  * @date 23.09.2024
+ * 
+ * @brief hlavickovy soubor pro zakladni logiku exporteru a zpracovani paket
  * 
  */
 #include <pcap.h>
@@ -17,12 +18,17 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
+#include <sys/socket.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "hash_table.h"
 #include "arg_parser.h"
 
-extern struct timeval tv;
+#define NETFLOW_V5_VERSION 5
 
+/* Externi promenna, udavajici SySUptime, tedy cas od zapnuti exporteru, dostupna odkudkoli */
+extern struct timeval tv;
 
 /**
  * 
@@ -64,7 +70,7 @@ void packet_handler(uint8_t *user, const struct pcap_pkthdr *pkthdr, const uint8
  * 
  * @param flow tok pro pridani
  * 
- * @returns true v pripade povedeneho odeslani, jinak false
+ * @returns true v pripade prubehu bez chyby, jinak false (propagace selhani exportu v pripade naplneni setu)
  * 
  */
 bool handle_flow(netflowv5 *flow, arguments *args);
@@ -80,26 +86,29 @@ bool handle_flow(netflowv5 *flow, arguments *args);
  */
 bool check_for_flags(netflowv5 *flow);
 
+
 /**
  * 
- * @brief pomocna funkce, ktera pred aktualizaci toku zjisti, zdali dany tok jiz nepresahl aktivni dobu
+ * @brief pomocna funkce pro kontrolu aktivniho timeoutu
  * 
- * @param flow puvodni tok
- * @param timeout aktivni timeout v sekundach
+ * @param flow1 puvodni tok
+ * @param flow2 novy zachyceny paket patrici do stejneho toku jako flow1
+ * @param timeout aktivni timeout v s
  * 
- * @returns truen v pripade ze puvodni tok ma byt exportovan, jinak false - slozueni toku
+ * @returns true v priapade, ze tok jiz expiroval v ramci aktivnihi timeoutu, jinak false
  * 
  */
 bool check_for_active(netflowv5 *flow1, netflowv5 *flow2,  int timeout);
 
 /**
  * 
- * @brief pomocna funkce kontrolujici, zdali dany tok je neaktivni
+ * @brief pomocna funkce pro kontrolu neaktivniho timeoutu
  * 
- * @param flow tok pro kontrolu
- * @param timeout neaktivni timeout v sekundach
+ * @param flow1 puvodni tok
+ * @param flow2 novy paket, patrici do stejneho toku jako flow1
+ * @param timeout neaktivni timeout v s
  * 
- * @returns true v pripade ze tok je neaktivni, jinak false - nebude exportovan  
+ * @returns true v pripade expirace toku v ramci neaktivniho timeoutu, jinak false
  * 
  */
 bool check_for_inactive(netflowv5 *flow1, netflowv5 *flow2, int timeout);
@@ -107,11 +116,11 @@ bool check_for_inactive(netflowv5 *flow1, netflowv5 *flow2, int timeout);
 
 /**
  * 
- * @brief funkce kontrolujici zdali existuje nejaky tok, co je neaktivni
+ * @brief funkce kontrolujici zdali existuje nejaky tok, jez expiroval v ramci timeoutu nebo flagu
  * 
  * @param flows hashovaci tabulka obsahujici zaznamy o tocich
  * 
- * @returns true v pripade uspesneho exportovani vsech neaktivnich toku, false v priapde chyby exportu
+ * @returns true v pripade uspesneho exportovani vsech expirovanych toku, jinak false
  * 
  */
 bool check_for_expired_flows(netflowv5 **flows, netflowv5 *flow, arguments *args);
@@ -127,6 +136,15 @@ bool check_for_expired_flows(netflowv5 **flows, netflowv5 *flow, arguments *args
  */
 bool clean_exporting(netflowv5 **flows, arguments *args);
 
+/**
+ * 
+ * @brief funkce zajistujici export datagramu obsahujici X pocet toku na kolektor
+ * 
+ * @param args vstupni argumnety
+ * 
+ * @returns true v pripade povedeneho exportu, jinak false
+ * 
+ */
 bool export_datagram(arguments *args);
 
 #endif

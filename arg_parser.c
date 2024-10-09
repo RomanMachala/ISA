@@ -3,6 +3,7 @@
  * @author Roman Machala
  * @date 21.09.2024
  *
+ * @brief soubor obsahujici implementaci logiky zpracovani parametru
  *   
  */ 
 
@@ -13,7 +14,17 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-
+/**
+ * 
+ * @brief hlavni funkce pro zpracovani argumntu
+ * 
+ * @param args struktura pro uchovani zpraovanych parametru
+ * @param arg vstupni argumenty programu
+ * @param argc pocet argumentu
+ * 
+ * @returns true v pripade spravneh zpracovani jinak false
+ * 
+ */
 bool parse_arguments(arguments *args, char *arg[], int argc){
     
     /* Defaultni hodnoty pro timeout argumenty a pro debug mod*/
@@ -68,6 +79,9 @@ bool parse_arguments(arguments *args, char *arg[], int argc){
  * 
  * @param next_pos pozice v poli retezcu nasledujiciho argumentu
  * @param argc celkovy pocet zadanych argumentu
+ * 
+ * @returns true v pripade, ze nasledujici argument existuje, jinak false 
+ * 
  */
 bool next_argument(int next_pos, int argc, char *arg[]){
     if (next_pos >= argc) return false; /* pokud neni dalsi parametr neni treba pokracovat v kontrole */
@@ -150,6 +164,7 @@ bool get_host_and_port(char *param, arguments *args){
  * @brief pomocna funkce pro vypis chyb pri zpracovavani parametru
  * 
  * @param code udava o jaky typ chyby se jedna
+ * 
  */
 void print_error(int code){
     switch (code)
@@ -221,6 +236,13 @@ int check_arguments(arguments *args){
     return 1;
 }
 
+/**
+ * 
+ * @brief debugovaci funkce pro vypis vsech zadanych parametru
+ * 
+ * @param args struktura obsahujici vsechny parametry
+ * 
+ */
 void print_params(arguments *args){
     printf("\t\tDebug mode active\n");
     printf("Used params:\n\n");
@@ -234,7 +256,16 @@ void print_params(arguments *args){
     printf("\tHostname is %s\n", args->address_hostname);
 }
 
-char *get_address_hostname(char *hostename){
+/**
+ * 
+ * @brief pomocna funkce pro prevod domenu na ip adresu (prevzana z meho projektu do predmetu IPK)
+ * 
+ * @param hostname domena
+ * 
+ * @returns ip adresu ve formatu retezce, v pripade chyby NULL
+ * 
+ */
+char *get_address_hostname(char *hostname){
     struct addrinfo hints, *res;
     int status;
     char *ipstr = (char *)malloc(INET_ADDRSTRLEN); 
@@ -244,10 +275,10 @@ char *get_address_hostname(char *hostename){
     }
 
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET; //IPv4
+    hints.ai_family = AF_INET; /* Chceme format IPv4 */
     hints.ai_socktype = SOCK_STREAM;
 
-    if ((status = getaddrinfo(hostename, NULL, &hints, &res)) != 0) {
+    if ((status = getaddrinfo(hostname, NULL, &hints, &res)) != 0) {
         fprintf(stderr, "ERR: Getting addr info - %s\n", gai_strerror(status));
         return NULL;
     }
@@ -257,7 +288,7 @@ char *get_address_hostname(char *hostename){
         void *addr = &(ipv4->sin_addr);
 
         inet_ntop(res->ai_family, addr, ipstr, INET_ADDRSTRLEN);
-        freeaddrinfo(res); // free address info
+        freeaddrinfo(res); /* Uvolnime, co jiz nepotrebujeme */
         return ipstr;
     }
 

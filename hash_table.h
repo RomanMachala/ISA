@@ -38,8 +38,8 @@ typedef struct NetFlowv5{
     uint16_t output;        /* SNMP index of output interface */ 
     uint32_t dPkts;         /* Packets in the flow */
     uint32_t dOctets;       /* Total number of Layer 3 bytes in the packets of the flow */
-    int32_t first;         /* SysUptime at start of flow */
-    int32_t last;          /* SysUptime at the time the last packet of the flow was received */
+    int32_t first;          /* SysUptime at start of flow */
+    int32_t last;           /* SysUptime at the time the last packet of the flow was received */
     uint16_t srcport;       /* TCP/UDP source port number or equivalent */
     uint16_t dstport;       /* TCP/UDP destination port number or equivalent */
     uint8_t pad1;           /* Unused (zero) bytes */

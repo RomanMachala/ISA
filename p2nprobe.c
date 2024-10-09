@@ -49,8 +49,6 @@ int main(int argc, char *argv[]){
     init(flows);
     start_extraction(&handler);
 
-    
-
     export_datagram(&args);
 
     clean_flows(flows);
