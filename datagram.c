@@ -25,7 +25,6 @@ void add_flow(netflowv5 *flow){
     }
 
     copy_flow(set.flows[set.count - 1], flow);
-    
 }
 
 /**

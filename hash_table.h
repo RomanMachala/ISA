@@ -128,4 +128,6 @@ void copy_flow(netflowv5 *flow1, netflowv5 *flow2);
 
 int abs(int num);
 
+void free_flow(netflowv5 **flows, netflowv5 *flow);
+
 #endif

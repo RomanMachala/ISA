@@ -89,16 +89,20 @@ netflowv5 *insert_into_table(netflowv5 **flows, netflowv5 *current_flow){
         return old_flow;
     }
 
-    int temp_hash = hash;
+    /* pouze pokud na danem hashi jiz neco bylo, najdeme vhodne misto */
+    int temp_hash = hash + 1;
     while(temp_hash < MAX_FLOW_LENGTH){
-        temp_hash = (temp_hash + 1) % MAX_FLOW_LENGTH;
 
         if(!flows[temp_hash]){
             flows[temp_hash] = current_flow;
             return flows[temp_hash];
         }else if(temp_hash == hash){
+            //free(current_flow);
+            //current_flow = NULL;
             break;
         }
+
+        temp_hash = (temp_hash + 1) % MAX_FLOW_LENGTH;
 
     }
 
@@ -167,6 +171,17 @@ int abs(int num){
         return -num;
     }
     return num;
+}
+
+void free_flow(netflowv5 **flows, netflowv5 *flow){
+    for (int i = 0; i < MAX_FLOW_LENGTH; i++){
+        if(flows[i]){
+            if(compare_flows(flows[i], flow)){
+                free(flows[i]);
+                flows[i] = NULL;
+            }
+        }
+    }
 }
 
 

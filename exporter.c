@@ -86,10 +86,12 @@ void packet_handler(uint8_t *user, const struct pcap_pkthdr *pkthdr, const uint8
      * nova zachycena paketa pak tvori zcela novy tok 
      * 
      */
-    bool result = check_for_expired_flows(handler->flows, new_flow, handler->args);
-    if(!result){
-        handler->result = false;
+    if(check_for_expired_flows(handler->flows, new_flow, handler->args)){
+        netflowv5 *expired = get_flow(handler->flows, new_flow);
+        handle_flow(expired, handler->args);    /* Vlozime expirovanou do setu */
+        free_flow(handler->flows, expired); /* Uvolnime z pameti */
     }
+
     /* Vlozime do tabulky, budto jako novy tok nebo aktualizaci jiz existujiciho toku */
     insert_into_table(handler->flows, new_flow);
 
@@ -228,20 +230,9 @@ bool check_for_inactive(netflowv5 *flow1, netflowv5 *flow2 ,int timeout){
 bool check_for_expired_flows(netflowv5 **flows, netflowv5 *flow, arguments *args){
     netflowv5 *old_flow = get_flow(flows, flow);    /* Ziska jiz existujici tok */
 
-    if(!old_flow) return true;  /* Pokud takovy tok neexistuje, neni co resit */
+    if(!old_flow) return false;  /* Pokud takovy tok neexistuje, neni co resit */
 
-    /* Zkontroluje toky na jednotlive timeouty */
-    if(check_for_active(old_flow, flow, args->active_timeout)){
-        //printf("Vyprsel aktivni timeout, rozdil je:%d\n\n", abs(abs(old_flow->first) - abs(flow->last)));
-        bool result = handle_flow(old_flow, args);
-        if(!result) return false;
-    }else if(check_for_inactive(old_flow, flow, args->inactive_timeout)){
-        //printf("Vyprsel inaktivni timeout, rozdil je: %d\n\n", abs(abs(old_flow->last)- abs(flow->first)));
-        bool result = handle_flow(old_flow, args);
-        if(!result) return false;
-    }
-
-    return true;
+    return (check_for_active(old_flow, flow, args->active_timeout) || check_for_inactive(old_flow, flow, args->inactive_timeout));
 }
 
 bool clean_exporting(netflowv5 **flows, arguments *args){
@@ -284,7 +275,7 @@ bool export_datagram(arguments *args){
     inet_pton(AF_INET, args->address_hostname, &collector_addr.sin_addr);
 
     size_t packet_size = sizeof(header) + sizeof(struct NetFlowv5) * set.count;
-    uint8_t *buffer = malloc(packet_size);
+    uint8_t *buffer = (uint8_t *)malloc(packet_size);
     if(buffer == NULL){
         //todo clean
         exit(1);
