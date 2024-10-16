@@ -1,0 +1,58 @@
+Autor -     Roman Machala (xmacha86)
+Datum -     16.10.2024
+
+
+
+# Obecný popis
+Program p2nprobe imlementuje chování exportéru pro protokol NetFlowv5. 
+Zpracovává zachycenou síťovou komunikaci ze souboru .pcap a pracuje s jednotlivými daty.
+Protokol funguje na principu, agregace paket do tzv. toků. Každý tok je dán
+unikátní kombinací - zdrojová a cílová IP adresa, zdrojový a cílový PORT a protokol 3 vrstvy.
+NetFlowv5 slouží k monitorování a statistické analýze sítě. Implementovaný exportér pracuje nad tímto protokolem, kde
+zpracovává pouze TCP pakety, pouze se souboru a implementuje aktivní a neaktivní timeout (viz. popsáno v manual.pdf) pro expiraci 
+jednotlivých toků. Toky jsou odesílány na kolektor po 30 tocích na jedno UDP, kde jsou dále zpracovány.
+
+# Implementovaná funkcionalita a rozšíření
+- zpracování souboru
+- tvorba jednotlivých toků
+- agregace paketů do jednotlivých toků
+- aktivní a neaktivní timeout
+- export toků po 30 na exportér (nebo méně pokud již další toky nejsou)
+- zachycení Ctrl-C a nenásilné ukončení
+- správná manipulace s pamětí
+
+
+- je možno zadat přepínač -d nebo --debug pro ladící výpisy
+
+# Neimplementovaná funkcionalita a limitace
+Nejsem si vědom žádné limitiace, kterou by implementovaný program obsahoval, nebo funkcionality, která
+by chyběla. 
+
+# Příklady spuštění programu
+- ./p2nprobe localhost:1010 file.pcap
+    Spustí program, zpracuje soubor file.pcap a odešle data na kolektor na adrese localhost:1010
+- ./p2nprobe localhost:1010 file.pcap -a 10
+    Kromě samotného zpracování souboru a odeslání dat, expiruje toky na základě překročení aktivního timeoutu.
+- ./p2nprobe localhost:1010 file.pcap -i 10
+    Kromě samotného zpracování souboru a odeslání dat, expiruej toky na zíkladě překročení neaktivního timeoutu.
+- ./p2nprobe localhost:1010 file.pcap -a 10 -i 5
+    Kombinuje expiraci toků na základě jak aktivního ale i neaktivního timeoutu.
+
+
+# Seznam odevzdaných souborů
+- tests             - složka obsahující testovací skripty, testovací data atd.
+- docu              - složka obsahující všechno potřebné pro dokumentaci
+- p2nprobe.c        - hlavní tělo programu, které spojuje jednotlivé části dohromady
+- arg_parser.c      - implementuje logiku parsování argumentů
+- arg_parser.h      - hlavičkový soubor pro parsování argumentů
+- datagram.c        - implementuje logiku manipuace s datagramem NetFlowv5
+- datagram.h        - hlavičkový soubor NetFlowv5 datagramu
+- exporter.c        - implementuje logiku pro exportování, zpracování paket, tvorbu toků, agregaci paket do toků
+- exporter.h        - hlavičkový soubor pro hlavní logiku porgramu
+- hash_table.c      - implementuje logiku manipulace s hashovací tabulkou
+- hash_table.h      - hlavičkový soubor pro hashovací tabulku
+- manual.pdf        - vygenerovaná dokumentace v pdf
+- README            - tento soubor
+- Makefile          - soubor pro překlad programu a tvorbu dokumentace
+
+

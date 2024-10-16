@@ -1,6 +1,6 @@
 # Nazev vystupniho souboru
 TARGET = p2nprobe
-CO=manual
+
 
 # Compiler
 CC = gcc
@@ -19,13 +19,3 @@ p2nprobe.o: p2nprobe.c
 # Vyčištění (odstraní objektové a spustitelné soubory)
 clean:
 	rm -f $(TARGET) p2nprobe.o arg_parser.o exporter.o hash_table.o datagram.o
-
-tex: $(CO).tex $(CO).bib
-	pdflatex $(CO).tex  # První překlad LaTeXu
-	bibtex $(CO)        # BibTeX pro citace
-	pdflatex $(CO).tex  # Druhý překlad LaTeXu (citace)
-	pdflatex $(CO).tex  # Finální překlad
-
-# Kompletní vyčištění (odstraní všechny dočasné soubory)
-clean_tex:
-	rm -f $(CO).pdf $(CO).aux $(CO).bbl $(CO).blg $(CO).log
