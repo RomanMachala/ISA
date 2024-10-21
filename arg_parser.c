@@ -1,6 +1,6 @@
 /**
  *
- * @author Roman Machala
+ * @author Roman Machala (xmacha86)
  * @date 21.09.2024
  *
  * @brief soubor obsahujici implementaci logiky zpracovani parametru
@@ -283,6 +283,7 @@ char *get_address_hostname(char *hostname){
         return NULL;
     }
 
+    /* Pokud ziskani adresy selhalo */
     if (res != NULL) {
         struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
         void *addr = &(ipv4->sin_addr);

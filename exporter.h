@@ -3,7 +3,7 @@
 
 /**
  * 
- * @author Roman Machala
+ * @author Roman Machala (xmacha86)
  * @date 23.09.2024
  * 
  * @brief hlavickovy soubor pro zakladni logiku exporteru a zpracovani paket
@@ -25,7 +25,7 @@
 #include "hash_table.h"
 #include "arg_parser.h"
 
-#define NETFLOW_V5_VERSION 5
+#define NETFLOW_V5_VERSION 5 /* Pevne dana verze NetFLow protokolu */
 
 /* Externi promenna, udavajici SySUptime, tedy cas od zapnuti exporteru, dostupna odkudkoli */
 extern struct timeval tv;

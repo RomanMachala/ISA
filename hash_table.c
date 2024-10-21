@@ -1,7 +1,7 @@
 /**
  * 
  * @brief Implementace logiky hashovaci tabulky
- * @author Roman Machala
+ * @author Roman Machala (xmacha86)
  * @date 22.09.2024
  * 
  */
@@ -114,6 +114,8 @@ netflowv5 *insert_into_table(netflowv5 **flows, netflowv5 *current_flow){
  * 
  * @brief jednoducha funkce, projde sekvencne celou tabulku a odstrani vsechny zaznamy, pokud nejake zbyly
  * 
+ * @param flows hashovaci tabulka obsahujici jendotlive zaznamy
+ * 
  */
 void clean_flows(netflowv5 **flows){
     for(int i = 0; i < MAX_FLOW_LENGTH; i++){
@@ -124,12 +126,29 @@ void clean_flows(netflowv5 **flows){
     }
 }
 
+/**
+ * 
+ * @brief inicializacni funkce pro hashovaci tabulku, inicializuje tabulku na NULL
+ * 
+ * @param flows hashovaci tabulka
+ * 
+ */
 void init(netflowv5 **flows){
     for(int i = 0; i < MAX_FLOW_LENGTH; i++){
         flows[i] = NULL;
     }
 }
 
+/**
+ * 
+ * @brief funkce vracejici zaznam o tokuz tabulky
+ * 
+ * @param flows hashovaci tabulka obsahujici jendotlive zaznamy
+ * @param flow tok, jez chceme v taulce vyhledat
+ * 
+ * @returns nalezeny tok shodny s tokem flow, nebo NULL
+ * 
+ */
 netflowv5 *get_flow(netflowv5 **flows, netflowv5 *flow){
     for(int i = 0; i < MAX_FLOW_LENGTH; i++){
         if(flows[i]){
@@ -141,6 +160,13 @@ netflowv5 *get_flow(netflowv5 **flows, netflowv5 *flow){
     return NULL;
 }
 
+/**
+ * 
+ * @brief pomocna funkce pro kopirovani hodnot toku 
+ * @param flow1 puvodni tok
+ * @param flow2 kopie toku
+ * 
+ */
 void copy_flow(netflowv5 *flow1, netflowv5 *flow2){
     
     flow1->srcaddr      = flow2->srcaddr;       
@@ -166,6 +192,15 @@ void copy_flow(netflowv5 *flow1, netflowv5 *flow2){
 
 }
 
+/**
+ * 
+ * @brief pomocna funkce pro prevod cisla na absolutni hodnotu
+ * 
+ * @param num cislo, jehoz chceme absolutni hodnotu
+ * 
+ * @returns absolutni hodnotu cisla
+ * 
+ */
 int abs(int num){
     if(num < 0){
         return -num;
@@ -173,10 +208,21 @@ int abs(int num){
     return num;
 }
 
+/**
+ * 
+ * @brief funkce starajici se o korektni uvolneni toku z tabulky (je zapotrebi, jelikoz se v jednotlivych funkcich pracuje s lokalni promennou
+ *        tudiz nelze potom nastavit ukazatel v tabulce na NULL - prisel jsem na toto v pozdejsi fazi vyvoje, musel bych prepisovat polovinu kodu)
+ * 
+ * @param flows hashovaci tabulka uchovavajici vsechny zaznamy o jednotlivych tocich
+ * @param flow tok, jez ma byt z tabulky uvolnen
+ * 
+ */
 void free_flow(netflowv5 **flows, netflowv5 *flow){
+    /* Projde sekvencne celou tabulku */
     for (int i = 0; i < MAX_FLOW_LENGTH; i++){
         if(flows[i]){
             if(compare_flows(flows[i], flow)){
+                /* Pokud se jedna o stejny tok, uvolni jej */
                 free(flows[i]);
                 flows[i] = NULL;
             }

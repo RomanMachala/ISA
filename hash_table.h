@@ -4,7 +4,7 @@
 /**
  * 
  * @brief Hlavickovy soubor pro hashovaci tabulku
- * @author Roman Machala
+ * @author Roman Machala (xmacha86)
  * @date 23.09.2024
  * 
  */
@@ -120,14 +120,56 @@ netflowv5 *insert_into_table(netflowv5 **flows, netflowv5 *current_flow);
  */
 void clean_flows(netflowv5 **flows);
 
+/**
+ * 
+ * @brief inicializacni funkce hashovaci tabulky
+ * 
+ * @param flows hashovaci tabulka
+ * 
+ */
 void init(netflowv5 **flows);
 
+/**
+ * 
+ * @brief funkce, vracejici dany tok z tabulky
+ * 
+ * @param flows hashovaci tabulka uchovavajici jednotlive zaznamy o tocich
+ * @param flow tok, jez chceme v tbaulce najit
+ * 
+ * @returns ukazatel na dany tok, jinak NULL (pokud neexistuje)
+ * 
+ */
 netflowv5 *get_flow(netflowv5 **flows,  netflowv5 *flow);
 
+/**
+ * 
+ * @brief funkce kopirujici obsah toku
+ * 
+ * @param flow1 puvodni tok, jez chceme zkopirovat
+ * @param flow2 novy tok, do ktereho data zkppirujeme
+ * 
+ */
 void copy_flow(netflowv5 *flow1, netflowv5 *flow2);
 
+/**
+ * 
+ * @brief pomocna funkce pro prevod cisla na jeho absolutni hodnotu
+ * 
+ * @param num cislo, jez chceme prevest
+ * 
+ * @returns absolutni hodnotu daneho cisla
+ * 
+ */
 int abs(int num);
 
+/**
+ * 
+ * @brief funkce starajici se o korektni uvolneni toku z tabulky
+ * 
+ * @param flows hashovaci tabulka uchovavajici zaznamy o jednotlivych tocich
+ * @param flow tok, jez chceme uvolnit z tabulky
+ * 
+ */
 void free_flow(netflowv5 **flows, netflowv5 *flow);
 
 #endif

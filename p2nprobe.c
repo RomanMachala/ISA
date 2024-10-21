@@ -27,7 +27,7 @@ void handle_signal(int sig){
     exit(0);
 }
 
-struct timeval tv;
+struct timeval tv;  /* Reprezentuje cas spusteni exporteru */
 
 int main(int argc, char *argv[]){
 
@@ -47,11 +47,11 @@ int main(int argc, char *argv[]){
     packet_handling handler = {flows, &args, &result};
 
     init(flows);
-    start_extraction(&handler);
+    start_extraction(&handler); /* Spusti hlavni telo, zpracovavajici pakety ze souboru a nasledne jejich export */
 
-    export_datagram(&args);
+    export_datagram(&args); /* Exporte zbyajici, pokud jdou, toky z tabulky */
 
-    clean_flows(flows);
+    clean_flows(flows); /* Uvolni pamet */
 
     free(args.address_hostname);
 

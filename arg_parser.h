@@ -3,7 +3,7 @@
 
 /**
  *
- * @author Roman Machala
+ * @author Roman Machala (xmacha86)
  * @date 21.09.2024
  *
  * @brief hlavickovy soubor pro logiku zpracovani vstupnich parametru programu

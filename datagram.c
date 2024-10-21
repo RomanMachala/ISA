@@ -1,6 +1,6 @@
 /**
  *
- * @author Roman Machala
+ * @author Roman Machala (xmacha86)
  * @date 03.10.2024
  *
  * @brief soubor obsahujici implementaci logiky pro praci s datagramy obsahujici jednotlive toky pro exportovani
@@ -24,7 +24,7 @@ void add_flow(netflowv5 *flow){
         return;
     }
 
-    copy_flow(set.flows[set.count - 1], flow);
+    copy_flow(set.flows[set.count - 1], flow);  /* Nakopirujeme hodnoty toku do setu */
 }
 
 /**
@@ -55,6 +55,13 @@ void print_ip_addr(char *temp ,uint32_t ip_address){
     printf("%s:%s", temp, ip_addr);
 }
 
+/**
+ *
+ * @brief pomocna funkce pro konverzi host to network orderu 
+ * 
+ * @param flow flow, jez ma byt exportovana
+ * 
+ */
 void convert_flow_to_network_order(netflowv5 *flow){
     flow->dPkts = htonl(flow->dPkts);
     flow->dOctets = htonl(flow->dOctets);

@@ -1,7 +1,7 @@
 /**
  *
- * @brief   
- * @author Roman Machala 
+ * @brief soubor obsahujici hlavni logiku exporteru a praci s toky
+ * @author Roman Machala (xmacha86)
  * @date 23.09.2024
  * 
  */
@@ -235,6 +235,16 @@ bool check_for_expired_flows(netflowv5 **flows, netflowv5 *flow, arguments *args
     return (check_for_active(old_flow, flow, args->active_timeout) || check_for_inactive(old_flow, flow, args->inactive_timeout));
 }
 
+/**
+ * 
+ * @brief funkce, zajistujici export zbylych toku, ktere nebyly oznaceny za expirovane (po zpracovani souboru nektere mohou zustat) 
+ * 
+ * @param flows hashovaci tabulka uchovavajici zbyle toky
+ * @param args argumenty prikazove radky
+ * 
+ * @returns true v pripade povedeneho exportu vsech zbylych toku, jinak false
+ * 
+ */
 bool clean_exporting(netflowv5 **flows, arguments *args){
     for(int i = 0; i < MAX_FLOW_LENGTH; i++){
         if(flows[i]){
@@ -246,6 +256,15 @@ bool clean_exporting(netflowv5 **flows, arguments *args){
     return true;
 }
 
+/**
+ * 
+ * @brief hlavni funkce starajici se o export toku na kolektor
+ * 
+ * @param args argumenty prikazove radky
+ * 
+ * @returns true v pripade povedeneho exportu, jinak false
+ * 
+ */
 bool export_datagram(arguments *args){
     /* Ziskame aktualni cas */
     struct timespec current_time;

@@ -1,6 +1,6 @@
 /**
  *
- * @author Roman Machala
+ * @author Roman Machala (xmacha86)
  * @date 03.10.2024
  *
  * @brief hlavickovy soubor pro logiku prace s datagramy obsahujici toky pro export
@@ -78,6 +78,14 @@ bool export_set();
  */
 void print_ip_addr(char *temp ,uint32_t ip_address);
 
+
+/**
+ * 
+ * @brief pomocna funkce pro konverzi host to network informaci pred exportem
+ * 
+ * @param flow tok, jez ma byt exportovan
+ * 
+ */
 void convert_flow_to_network_order(netflowv5 *flow);
 
 #endif
