@@ -36,9 +36,9 @@ int main(int argc, char *argv[]){
     signal(SIGINT, handle_signal);  /* V pripade stisknuti Ctrl-C dojde k zavolani funkce handle_signal a dojde k adekvatnimu ukonceni programu */
 
     arguments args;     /* Struktura obsahujici parametry prikazove radky */
-    if(!parse_arguments(&args, argv, argc)) return 1;     /* Zpracuje argumenty, vraci false v pripade chybejici pozadovane hodnoty (-i, -a) */
+    if(!parse_arguments(&args, argv, argc)) exit(1);     /* Zpracuje argumenty, vraci false v pripade chybejici pozadovane hodnoty (-i, -a) */
 
-    if(!check_arguments(&args)) return 1;   /* Pokud nejsou zadany pozadovane parametry (host, port, PCAP soubor) */
+    if(!check_arguments(&args)) exit(1);   /* Pokud nejsou zadany pozadovane parametry (host, port, PCAP soubor) */
 
     if(args.debug) print_params(&args);
 

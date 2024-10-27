@@ -27,10 +27,15 @@
  */
 bool parse_arguments(arguments *args, char *arg[], int argc){
     
-    /* Defaultni hodnoty pro timeout argumenty a pro debug mod*/
+    /* Defaultni hodnoty*/
     args->active_timeout = 60;
     args->inactive_timeout = 60;
     args->debug = false;
+    args->host = NULL;
+    args->port = -1;
+    args->file_path = NULL;
+    args->debug = false;
+    args->address_hostname = NULL;
 
     for (int i = 1; i < argc; i++){
         switch (get_type_param(arg[i]))
@@ -214,21 +219,23 @@ int check_arguments(arguments *args){
         print_error(4);
         flag = true;
     }
-    if(!args->port){
+    if(args->port == -1){
         print_error(5);
         flag = true;
     }
     if(!args->host){
         print_error(6);
         flag = true;
+    }else{
+        /* Prevedeme adresu hosta na ip adresu */
+        args->address_hostname = get_address_hostname(args->host);
+        if(!args->address_hostname){
+            print_error(7);
+            flag = true;
+        }
     }
 
-    /* Prevedeme adresu hosta na ip adresu */
-    args->address_hostname = get_address_hostname(args->host);
-    if(!args->address_hostname){
-        print_error(7);
-        flag = true;
-    }
+    
 
 
     if(flag) return 0;
@@ -266,6 +273,7 @@ void print_params(arguments *args){
  * 
  */
 char *get_address_hostname(char *hostname){
+    if(!hostname) return NULL;
     struct addrinfo hints, *res;
     int status;
     char *ipstr = (char *)malloc(INET_ADDRSTRLEN); 

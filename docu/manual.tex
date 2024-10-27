@@ -6,9 +6,10 @@
     \usepackage{times}
     \usepackage{hyperref}
     \usepackage{listings}
-
+    \usepackage{xcolor}
     \usepackage[dvipsnames]{xcolor}
     \usepackage{graphicx}
+    \usepackage{float}
     
 
 \lstdefinestyle{CStyle}{
@@ -64,9 +65,9 @@
 
 \section{Úvod}
     NetFlow je síťový protokol vyvinut společností CISCO, který slouží k monitorování a analýze síťového provozu.
-    Umožňuje zachytávat jednotlivé pakety, které následně rozděluje do toků na základě např. zdrojové a cílové IP adresy.
+    Umožňuje zachytávat jednotlivé pakety, které následně rozděluje do toků na základě klíčových atributů.
     Tyto data jsou pomocí protokolu UDP z exportéru odeslána do centrálního sběrače (kolektoru), kde
-    mohou být analyzována za účelem zjištění vytížení síte, anomálií nebo napříkald i bezpečnostních incidentů\cite{Cisco_2019}.
+    mohou být analyzována za účelem zjištění vytížení síte, anomálií nebo například i bezpečnostních incidentů\cite{Cisco_2019}.
 
     Pro protokol NetFlow existuje mnoho verzí, nicméně tato práce se 
     zabývá pouze verzí v5, což je jedna z nejpoužívanějších verzí vůbec, dostupná na drtivé většině
@@ -91,7 +92,7 @@
     pouze \textbf{tučně} vyznačené informace. Je tak uvažováno z důvodů stanovení požadavků dle zadání nebo pozdějších upřesnění v rámci diskuzního fóra pro řešení projektu. Více info o rozdílech a limitacích v sekci \ref{limitace}.
     \vspace{2cm}
 
-    \begin{figure}[h!]
+    \begin{figure}[H]
         \begin{minipage}[t]{0.45\textwidth}
             \subsection*{Tok 1:}
             \begin{tabbing}
@@ -133,7 +134,7 @@
     rovno kontrolnímu číslu předešlého toku + počet toků v předešlém datagramu. Při přijetí nového datagramu tak kolektor může zkontrolovat, zda došlo 
     ke ztrátě toků\cite{Cisco_datagram}\cite{IBM_header}.
 
-    \begin{figure}[h!]
+    \begin{figure}[H]
         \centering
         \begin{lstlisting}[style=CStyle]
             typedef struct NetFlowv5 {
@@ -163,7 +164,7 @@
         \label{netflowstruct}
     \end{figure}
 
-    \begin{figure}[h!]
+    \begin{figure}[H]
         \centering
         \begin{lstlisting}[style=CStyle]
             typedef struct NetFlowHeader {
@@ -189,7 +190,14 @@
     Aktivní timeout stanovuje dobu od první přijaté pakety, po které je tok uzavřen, nehledě na tom, zdali přicházejí další pakety. Jednoduchým příkladem může být komunikace mezi bodem \textbf{A} a \textbf{B}, která trvá 5 minut, tedy (300 sekund). Pokud bude aktivní timeout nastaven na dobu 60 sekund, z této komunikace nám vznikne celkem 5 toků, které budou identické co se týče položek určujících tok, sekce \ref{tok}, ale mohou být různé v počtu paket a celkového počtu bytů v rámci jednotlivých toků.
 
     \subsubsection{Neaktivní timeout}
-    Neaktivní timeout stanovuje dobu od poslední přijaté pakety, po kterou pokud nedojde další paketa patřící do onoho toku, je tok uzavřen. Příkladem pro tok expirovaný/uzavřený na základě neaktivního timeoutu je komunikace mezi bodem \textbf{A} a \textbf{B}, která obsahuje 2 pakety, kdy paketa \textbf{P1} je zachycena v čase \textbf{T1} a paketa \textbf{P2} je zachycena v čase \textbf{T1 + 30s}. Pokud je neaktivní timeout nastaven na 20 sekund, bude v době \textbf{T1 + 20s} tok obsahující pouze paketu \textbf{P1} uzavřen. Pro následující paketu \textbf{P2} v čase \textbf{T1 + 30s} bude vytvořen nový tok, obsahující pouze paketu \textbf{P2}.
+    Neaktivní timeout stanovuje dobu od poslední přijaté pakety, po kterou pokud nedojde další paketa patřící do onoho toku, je tok uzavřen. Příkladem pro tok expirovaný/uzavřený na základě neaktivního timeoutu je komunikace mezi bodem \textbf{A} a \textbf{B}, která obsahuje 2 pakety, kdy paketa \textbf{P1} je zachycena v čase \textbf{T1} a paketa \textbf{P2} je zachycena v čase \textbf{T1 + 30s}. Pokud je neaktivní timeout nastaven na 20 sekund, bude v době \textbf{T1 + 20s} tok obsahující pouze paketu \textbf{P1} uzavřen. Pro následující paketu \textbf{P2} v čase \textbf{T1 + 30s} bude vytvořen nový tok, obsahující pouze paketu \textbf{P2}, viz obrázek \ref{neaktivni_timeout}.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\linewidth]{pictures/neaktivni_timeout.png}
+        \caption{Neaktivní timeout}
+        \label{neaktivni_timeout}
+    \end{figure}
     
     \subsection{Rozdíly v implementaci}\label{limitace}
     V této sekci jsou popsány limitace procesu návrhu a implementace exportéru pro protokol NetFlow v5. 
@@ -235,7 +243,7 @@
     Tento celek se stará o zpracování argumentů příkazové řádky, poskytnuté uživatelem, převodem těchto argumentů
     do jejich očekávané podoby (pokud je to potřeba), nebo ke kontrole jejich správnosti.
 
-    \begin{table}[ht]
+    \begin{table}[H]
         \centering
         \begin{tabular}{|l|l|l|}
         \hline
@@ -260,7 +268,7 @@
     Jednotlivé pakety josu pak načteny v následujícím formátu:
     \vspace{1cm}
 
-    \begin{table}[ht]
+    \begin{table}[H]
         \centering
          \begin{tabular}{|c|c|c|c|c|}
             \hline
@@ -276,7 +284,7 @@
     V tabulce \ref{paketa} je paketa barevně odlišena na 2 části, se kterými se dá dále manipulovat.
     \pagebreak
 
-     \begin{figure}[h]
+     \begin{figure}[H]
         \centering
         \begin{lstlisting}[style=CStyle]
             struct pcap_pkthdr *pkthdr;     /* PCAP header */
@@ -308,7 +316,7 @@
     \subsection{Struktura pro ukládání toků}
     Jakožto struktura uchovávající jednotlivé záznamy o všech tocích je zvolena mírně upravená hashovací tabulka. Na základě potřebných informací tvořící unikátní kombinaci toku, sekce \ref{tok}, je vypočítán hash udávající index umístění toku v tabulce. Postup výpočtu hashe je možno vidět na obrázku \ref{hash}.
 
-     \begin{figure}[h!]
+     \begin{figure}[H]
         \centering
         \begin{lstlisting}[style=CStyle]
             int hash_function(netflowv5 *flow){
@@ -330,7 +338,7 @@
 
     Logika vkládání a kontroly je popsána v pseudokódu na obrázku \ref{pseudo}.
 
-     \begin{figure}[ht]
+     \begin{figure}[H]
         \centering
         \begin{lstlisting}[style=CStyle]
 
@@ -363,15 +371,12 @@
         \caption{Vkládání a kontrola expirace}
         \label{pseudo}
     \end{figure}
-
-    \pagebreak
-
     Základní princip spočívá v tom, že při načtení pakety je vytvořen nový tok, následně se vyhledá v tabulce, zdali již takový tok neexistuje. Pokud ne, je nový tok vložen do tabulky. Pokud ano, zkontroluje se, pokud aktualizací již existujícího toku dojde k překročení nějakého z timeoutů, je původní tok uzavřen a uchován ve struktuře pro export toků, více v sekci \ref{export}, a nově vytvořený tok je vložen do tabulky. Pokud k překročení timeoutu nedojde, je původní tok aktualizován nově vytvořeným.
     
     \subsection{Export toků}\label{export}
         Všechny uzavřené toky jsou uchovávány ve struktuře popsané na obrázku \ref{set}. Úkolem této struktury je uchovávat jednotlivé toky, považované za uzavřené na jednom místě, dokud nedojde k jejich exportu na kolektor. Aby byl počet exportovaných toků využit na maximum, dochází k jejich exportu, pokud je jejich počet roven 30, nebo pokud se zpracovaly všechny pakety ze souboru. 
 
-     \begin{figure}[h!]
+     \begin{figure}[H]
         \centering
         \begin{lstlisting}[style=CStyle]
             typedef struct ProcessedFlows{
@@ -388,7 +393,7 @@
     Položka \textbf{count} uchovává počet aktuálně uzavřených toků a při její hodnotě rovno 30 dojde k exportu. \textbf{Count} je pak resetován a inkrementován s dalším přibývajícím tokem. Položka \textbf{total\_count} potom slouží k uchování celkového počtu všech toků, pro naplnění kontrolního počtu toků v hlavičce NetFlowv5 protokolu, viz. obrázek \ref{netflowhdr}
 
     Samotnou logiku pro vytvoření datagramu pro export toků lze pak vidět na obrázku \ref{export_udp}.
-         \begin{figure}[ht]
+         \begin{figure}[H]
         \centering
         \begin{lstlisting}[style=CStyle]
             NetFlowHeader header;
@@ -424,10 +429,18 @@
         \label{export_udp}
     \end{figure}
 
-    \pagebreak
-    
+    \section{Implementační prostředí}\label{prostredi}
+    Drtivá většina implementace, ladění, testování atd. byla provedena na zařízení s operačním systémem Ubuntu 22.04.4 LTS. Jednotlivé verze použitých nástrojů:
+
+    \begin{itemize}
+        \item{Wireshark 4.4.0}
+        \item{Valgrind 3.18.1}
+        \item{Softflowd 1.0.0}
+        \item{Tcpdump 4.99.1}
+        \item{Nfcapd 1.6.23}
+    \end{itemize}Více o jednotlivých použitých nástrojích dále v sekci \ref{refer_nastroje}.    
     \section{Testování aplikace}\label{test_zac}
-    Pro zajištění správného chodu aplikace, byla jednak v průběhu implementace řádně zkoumána řadou nástrojů, ale taktéž důkladně testována. Většina těchto nástrojů je považována za referenční, proto je testování uzpůsobeno porovnávání výsledků implementovaného exportéru a referečních nástrojů. Více o těchto nástrojích v sekci \ref{refer_nastroje}. Testy jsou plně automatizované a jsou dostupné ve složce \texttt{/tests}. Samotné testování je pak možno spustit následovně:
+    Pro zajištění správného chodu aplikace, byla jednak v průběhu implementace řádně zkoumána řadou nástrojů, ale taktéž důkladně testována. Většina těchto nástrojů je považována za referenční, proto je testování uzpůsobeno porovnávání výsledků implementovaného exportéru a referečních nástrojů. Více o těchto nástrojích v sekci \ref{refer_nastroje}. \textbf{Testování je primárně prováděno na osobním zařízení, jež je popsáno v sekci \ref{prostredi}}. Testy jsou plně automatizované a jsou dostupné ve složce \texttt{/tests}. Samotné testování je pak možno spustit následovně:
 
     \begin{center}
         sudo ./tests.sh
@@ -440,11 +453,11 @@
         \item{Nejjednoduší testy se zabývají zpracováním 3-5 paket, kde všechny pakety patří do stejného toku. Cílem je tak ověřít schopnost programu zpracovat primitivní možství paket a samotnou schopnost vytvoření toku a následné agregace příslušných paket do oneho toku. Jsou zpracovávány zachycené komunikace obsahující pouze TCP protokol.} 
         \item{Pokročilější testy jsou uzpůsobeny pro kontrolu schopnosti programu zpracovávat větší množství paket, cca 150, patřících do různých toků. Důklad je tedy kladen na správnou tvorbu toků, agregaci nových paket do toků a správnou manipulaci s pamětí.}
         \item{Náročnější testy potom kombinují vělké množství paket a různé protokoly. Cílem je opět správně zapracovat pakety do příslušných toků, správná manipulace s pamětí a zpracování pouze TCP paket.}
-        \item{Samostatnou skupinu potom tvoří testy pro kontrolu správné implentace jednotlivých timeoutů, viz sekce \ref{timeout}. V těchto testech je primární zaměření na korektní tvorbu toků v závislosti na jednotlivých timeoutech. Pracuje se s menším množstvím paket, aby bylo zřetelné množství jednotlivých toků, nicméně je předpokládáno, že je možno zpracovávat libovolné množství paket\footnote{Tyto testy jsou jediné, jež nejsou automatizované.}.}
+        \item{Samostatnou skupinu potom tvoří testy pro kontrolu správné implementace jednotlivých timeoutů, viz sekce \ref{timeout}. V těchto testech je primární zaměření na korektní tvorbu toků v závislosti na jednotlivých timeoutech. Pracuje se s menším množstvím paket, aby bylo zřetelné množství jednotlivých toků, nicméně je předpokládáno, že je možno zpracovávat libovolné množství paket\footnote{Tyto testy jsou jediné, jež nejsou automatizované.}.}
     \end{itemize}
   
     \subsection{Referenční programy a jejich použití}\label{refer_nastroje}
-    V této sekci jsou popsány jednotlivé nástroje použity pro účely ladění programu, testování anebo pro zkoumání jejich chování. U jednotlivých nástrojů je taky popsáno, jakým způsobem jsou nástroje spouštěny a k čmeu byly přesně použity.
+    V této sekci jsou popsány jednotlivé nástroje použity pro účely ladění programu, testování anebo pro zkoumání jejich chování. U jednotlivých nástrojů je taky popsáno, jakým způsobem jsou nástroje spouštěny a k čemu byly přesně použity.
     \subsubsection{Wireshark}
     Program Wireshark je použit především pro zachycení komunikace pro samotné testy a pro zkoumání detailů implementace nástroje Softflowd. Komunikace byla zachycena na počítači s kabelovým internetovým připojením na rozhraní \texttt{eth0}.
     \subsubsection{Softflowd}
@@ -456,7 +469,9 @@
     \end{center}
 
     \subsubsection{Tcpdump}
-    Tento nástroj byl především použit pro filtraci paket pro jednotlivé testy. Některé ze zachycených komunikací pro účely testování obsahují protokoly i jiné, než TCP. Z tohoto důvodu jsou testovací pakety před zpracováním nástrojem softflowd přefiltrovány, aby obsahovaly pouze pakety s protokolem TCP. Tato filtrace je ovšem použita pouze před použitím referenčního nástroje, který neumožňuje, například přepínačem, zpracovávat pouze určité druhy protokolů. Implementovaný exportér zpracovává pouze TCP, není tedy nutná filtrace před jeho použitím.
+    Tento nástroj byl především použit pro filtraci paket pro jednotlivé testy. Některé ze zachycených komunikací pro účely testování obsahují protokoly i jiné, než TCP. Z tohoto důvodu jsou testovací pakety před zpracováním nástrojem softflowd přefiltrovány, aby obsahovaly pouze pakety s protokolem TCP. 
+    
+    Tato filtrace je ovšem použita pouze před použitím referenčního nástroje, který neumožňuje, například přepínačem, zpracovávat pouze určité druhy protokolů. Implementovaný exportér zpracovává pouze TCP, není tedy nutná filtrace před jeho použitím.
     Nástroj byl spouštěn následovně:
 
     \begin{center}
@@ -496,7 +511,7 @@
 
     Položky jako průměrný počet paket za sekundu atd. jsou taktéž kontrolovány, ale v případě neshody jsou pouze vypsaný, nejsou brány jako důvod k označení testu za selhaný, protože tyto informace vyžadují vysokou časovou přesnost a jsou závislé na celkové době zpracování toků, což může být ovlivněno specifickou implementací. Příklad, jak vypadají kontrolované položky je na obrázku \ref{test_pr}.
 
-    \begin{figure}[ht]
+    \begin{figure}[H]
         \centering
         \includegraphics[width=1\linewidth]{pictures/test_pr.png}
         \caption{Příklad výstupu}
@@ -504,15 +519,20 @@
     \end{figure}
     
     \subsection{Provedení testování}
-    Samotné testování proběhlo v pořádku. Pro jednotlivé testy zaměřující se na klíčové vlastnosti programu, viz. sekce  \ref{test_navrh}, jsou všechny testy průchozí v souladu s podmínkami v sekci \ref{test_podm}. Tyto testy jsou automatizované a  je tak možno si je snadno zreplikovat, viz úvod sekce \ref{test_zac}. Testování timeoutů probíhalo ručně, jelikož nebyla možnost specificky nastavit tyto hodnoty u referenčního exportéru, tudíž se testy nedaly zautomatizovat. Následující část popisuje toto testování a zobrazuje jejich vstupní data a jejich výsledky\footnote{Kolektor v následujících testech byl spouštěn v souladu s popisem v sekci \ref{collector}}.
-        \pagebreak
+    Samotné testování proběhlo v pořádku. Pro jednotlivé testy zaměřující se na klíčové vlastnosti programu, viz. sekce  \ref{test_navrh}, jsou všechny testy průchozí v souladu s podmínkami v sekci \ref{test_podm}. Tyto testy jsou automatizované a  je tak možno si je snadno zreplikovat, viz úvod sekce \ref{test_zac}. Testování timeoutů probíhalo ručně, jelikož nebyla možnost specificky nastavit tyto hodnoty u referenčního exportéru, tudíž se testy nedaly zautomatizovat. Následující část popisuje toto testování a zobrazuje jejich vstupní data a jejich výsledky\footnote{Kolektor v následujících testech byl spouštěn v souladu s popisem v sekci \ref{collector}}. Testy jsou spouštěny ze složky \texttt{/tests} a jejich formát je následující: 
+    \begin{itemize}
+        \item{Způsob spuštění programu}
+        \item{Obrázek zobrazující zachycených paket pro daný test}
+        \item{Obrázek zobrazující výstup daného testu}
+    \end{itemize}
+
     \subsubsection{Testování aktivního timeoutu}
 
     \begin{center}
         ../p2nprobe localhost:1010 timeouts/z\_timeout\_test\_0.pcap -a 1
     \end{center}
     \vspace{1cm}
-    \begin{figure}[ht]
+    \begin{figure}[H]
         \centering
         \includegraphics[width=1\linewidth]{pictures/test_1_data.png}
         \includegraphics[width=1\linewidth]{pictures/test_1_res.png}
@@ -523,7 +543,7 @@
         ../p2nprobe localhost:1010 timeouts/z\_timeout\_test\_0.pcap -a 5
     \end{center}
     \vspace{1cm}
-    \begin{figure}[ht]
+    \begin{figure}[H]
         \centering
         \includegraphics[width=1\linewidth]{pictures/test_2_data.png}
         \includegraphics[width=1\linewidth]{pictures/test_2_res.png}
@@ -534,19 +554,18 @@
         ../p2nprobe localhost:1010 timeouts/z\_timeout\_test\_0.pcap -a 4
     \end{center}
     \vspace{1cm}
-    \begin{figure}[ht]
+    \begin{figure}[H]
         \centering
         \includegraphics[width=1\linewidth]{pictures/test_3_data.png}
         \includegraphics[width=1\linewidth]{pictures/test_3_res.png}
         \caption{Test 3}
     \end{figure}
 
-    \pagebreak
     \subsubsection{Testování inaktivního timeoutu}
     \begin{center}
         ../p2nprobe localhost:1010 timeouts/z\_timeout\_test\_0.pcap -i 4
     \end{center}
-    \begin{figure}[ht]
+    \begin{figure}[H]
         \centering
         \includegraphics[width=1\linewidth]{pictures/test_4_data.png}
         \includegraphics[width=1\linewidth]{pictures/test_4_res.png}
@@ -556,7 +575,7 @@
     \begin{center}
         ../p2nprobe localhost:1010 timeouts/z\_timeout\_test\_0.pcap -i 5
     \end{center}
-    \begin{figure}[ht]
+    \begin{figure}[H]
         \centering
         \includegraphics[width=1\linewidth]{pictures/test_5_data.png}
         \includegraphics[width=1\linewidth]{pictures/test_5_res.png}
@@ -566,20 +585,58 @@
     \begin{center}
         ../p2nprobe localhost:1010 timeouts/z\_timeout\_test\_0.pcap -i 2
     \end{center}
-    \begin{figure}[ht]
+    \begin{figure}[H]
         \centering
         \includegraphics[width=1\linewidth]{pictures/test_6_data.png}
         \includegraphics[width=1\linewidth]{pictures/test_6_res.png}
         \caption{Test 6}
     \end{figure}
 
-    \pagebreak
+    \subsection{Testování na serveru \texttt{merlin.fit.vutbr.cz}}\label{test_merlin}
+    Jakožto finální část testování je kontrola jednak přeložitelnosti programu na serveru merlin, jež je referenčním prostředím, ale i vyzkoušení funkcionality samotného programu. Samotný překlad proběhl bez problému, viz obrázek \ref{preklad}, nicméně nebylo možné program otestovat pomocí nástroje valgrind, viz sekce \ref{refer_nastroje}. Na obrázku \ref{merlin_error} je možno vidět výstup jakéhokoliv pokusu o spuštění programu společně s nástrojem valgrind.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{pictures/preklad.png}
+        \caption{Překlad programu}
+        \label{preklad}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.8\linewidth]{pictures/merlin_error.png}
+        \caption{Chyba při spouštění nástroje valgrind}
+        \label{merlin_error}
+    \end{figure}
+
+    Zobrazená chyba je s největší pravděpodobností způsobena z důvodu, že valgrind nezná konkrétní systémové volání, jež program využivá, nebo alespoň verze, jež je použita na serveru merlin\footnote{Chyba se s největší pravděpodobností vztahuje na síťové funkce \\(\url{https://valgrind.org/docs/manual/dist.readme-missing.html})}. Z tohoto důvodu výpis valgrindu je v podstatě nepoužitelný, jelikož se vyskytují chyby typu: \texttt{Conditional jump or move depends on uninitialised value(s)}. Verze, jež byla použita při testování, viz sekce \ref{prostredi}, se liší od verze přítomné na serveru merlin. Z tohoto důvodů není možné správně zkontrolovat funkčnost programu co se týče práce s pamětí. 
+
+    Kvůli omezeným právům je taktéž nemožné spustit kolektor přijímající exportované pakety. Nicméně pomocí přepínače \texttt{-d} nebo \texttt{--debug} je možno spustit si ladící výstupy a je možno sledovat chování programu a tím tak alespoň otestovat jeho základní funkčnost.
+
+    Na obrázku \ref{ref_test} je možno vidět výstup referenčních nástrojů, viz sekce \ref{refer_nastroje}, a na obrázku \ref{impl_test} zase ladící výpisy programu při jeho spuštění na serveru merlin. Očekávané výstupy jsou shodné pro základní testy použité v rámci automatického testování popsáno v sekci \ref{test_navrh}. Zobrazovat výsledky jednotlivých testů nemá smysl, především z důvodu, že většina testů pracuje s výrazně větším množstvím paket, tudíž toků a orientace v nich by nemusela být nejjednodušší. Nicméně je prokázáno, že alespoň základní funkcionalitu implementovaný exportér na referenčním prostředí má. 
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{pictures/ref_out.png}
+        \caption{Výstup referenčních nástrojů}
+        \label{ref_test}
+    \end{figure}
+
+        \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.9\linewidth]{pictures/impl_out.png}
+        \caption{Výstup implementovaného programu}
+        \label{impl_test}
+    \end{figure}
+
+    
     \subsection{Závěr testování}
     Z jednotlivých testů je možno vidět, že aktivní a inaktivní timeout označují toky za expirované správně. Provedení testování ve větším množství je poměrně náročné z důvodu nemožnosti specifického nastavení těchto timeoutů u referenčního exportéru. Nicméně, z těchto testů je odvozeno, že zpracování většího množství nemá na chod implementovaného exportéru žádný vliv.
 
-    Všechny přiložené testy pokrývají základní/očekávanou funkčnost exportéru NetFlowv5 a všemi těmito testy aplikace prochází. Všechny tyto testy je možno zreplikovat, buďto spuštěním přiloženého skriptu nebo ručním spuštěním pro otestování jednotlivých timeoutů. Výsledky jednotlivých testů jsou uloženy a je možno si je zpětně procházet a v případě neúspěšného testu tak určit pravděpodobnost neúspěchu.
+    Všechny přiložené testy pokrývají základní/očekávanou funkčnost exportéru NetFlowv5 a všemi těmito testy aplikace prochází. Všechny tyto testy je možno zreplikovat, buďto spuštěním přiloženého skriptu nebo ručním spuštěním pro otestování jednotlivých timeoutů. Výsledky jednotlivých testů jsou uloženy a je možno si je zpětně procházet a v případě neúspěšného testu tak určit příčinu neúspěchu.
 
     Z testování aplikace tedy vyplývá, že aplikace je řádně otestována na její požadované/očekávané vlastnosti.
+    
     \section{Návod na použití}
     V tabulce \ref{parametry} jsou vyobrazeny všechny parametry, které se dají použít při spuštění aplikace. Povinné paramtery musí být vždy přítomné. Před spouštěním exportéru je vhodné ujistit se, že je zapnut kolektor na příslušné adrese, že jednotlivé soubory existují a že uživatel spouštějící aplikaci má příslušná práva. 
     
@@ -591,9 +648,9 @@
 
     kde \texttt{switches} jsou:
     \begin{itemize}
-        \item{-a value, Aktivní timeout v sekundách}
-        \item{-i value, Neaktivní timeout v sekundách}
-        \item{-d, Debugovací mód}
+        \item{\texttt{-a, --active} value, Aktivní timeout v sekundách}
+        \item{\texttt{-i, --inactive} value, Neaktivní timeout v sekundách}
+        \item{\texttt{-d, --debug},  Ladící mód}
     \end{itemize}
 
     \subsection{Příklady spuštění}
@@ -624,6 +681,11 @@
 
     \section{Závěr}
     Aplikace \texttt{p2nprobe}, je určena pro monitorování a statistické vyobrazení vytížení sítě společně s NetFlowv5 kolektorem. Zpracovává zachycenou komuniakci ze souboru \texttt{.pcap}, agreguje jednotlivé pakety do toků a následně jednotlivé toky odesílá na adresu kolektoru v síti.
+
+    Aplikace byla řádně otestována na její základní/očekávanou funkčnost. Je počítáno s faktem, že mnoství zpracovávaných paket nemá na chod aplikace žádný vliv. Aplikace je přeložitelná na referenčním serveru \\ \texttt{merlin.fit.vutbr.cz} a splňuje základní funkčnost na tomto zařízení.
+    Všechny testy jsou zreplikovatelné a návod, jak je zreplikovat je popsán v dané sekci popisující daný test.
+
+    Dále se předpokládá určitá přenositelnost této aplikace mezi jednotlivými systémy. Vlivem rozdílných verzí valgrindu při testování v implementačním prostředí, viz sekce \ref{prostredi} a referenčním prostředí (merlin), nebylo možné zkontrolovat korektní manipulaci s pamětí, viz sekce \ref{test_merlin}, nicméně v rámci testování manipulace s pamětí na implementačním prostředí byly testy průchozí, předpokládá se tedy korektnost v tomto směru. 
 
 
     \pagebreak

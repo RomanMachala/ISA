@@ -2,6 +2,7 @@ hash_table.o
 exporter.o
 arg_parser.o
 p2nprobe.o
+datagram.o
 p2nprobe
 manual.aux
 manual.bbl

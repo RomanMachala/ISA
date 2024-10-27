@@ -114,6 +114,10 @@ bool start_extraction(packet_handling *handler){
         return false;
     } 
 
+    set.count = 0;
+    set.total_count = 0;
+    memset(set.flows, 0, sizeof(set.flows));
+
     /* Zpracovani paketu, 0 znamena 'nekonecne' paket nebo do konce souboru, vlozime handler jako uzivatelsky parametr */
     pcap_loop(handle, 0, packet_handler, (uint8_t *)handler);
 
@@ -327,16 +331,18 @@ bool export_datagram(arguments *args){
         if(!set.flows[i]){
             continue;
         }
-        //free(set.flows[i]); 
-        //print_ip_addr("src", set.flows[i]->srcaddr);
-       // printf(":%u", ntohs(set.flows[i]->srcport));
-        //printf("\t\t");
-        //print_ip_addr("dst", set.flows[i]->dstaddr);
-        //printf(":%u", ntohs(set.flows[i]->dstport));
-        //printf("\n");
-        //printf("Number of pacekts: %d\n", ntohl(set.flows[i]->dPkts));
-        //printf("Bytes: %dB\n", ntohl(set.flows[i]->dOctets));
-        //printf("\n\n");
+        if(args->debug){
+            print_ip_addr("src", set.flows[i]->srcaddr);
+            printf(":%u", ntohs(set.flows[i]->srcport));
+            printf("\t\t");
+            print_ip_addr("dst", set.flows[i]->dstaddr);
+            printf(":%u", ntohs(set.flows[i]->dstport));
+            printf("\n");
+            printf("Number of pacekts: %d\n", ntohl(set.flows[i]->dPkts));
+            printf("Bytes: %dB\n", ntohl(set.flows[i]->dOctets));
+            printf("\n\n");
+        }
+        
         free(set.flows[i]);
         set.flows[i] = NULL;
     }

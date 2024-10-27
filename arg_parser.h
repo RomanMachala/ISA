@@ -23,7 +23,7 @@
  */
 typedef struct arguments{
     char *host;                         /* IP adresa nebo domena hosta */
-    unsigned int port;                  /* cislo portu hosta */
+    int port;                           /* cislo portu hosta */
     unsigned int active_timeout;        /* aktivni timeout v sec */
     unsigned int inactive_timeout;      /* inaktivni timeout v sec */
     char *file_path;                    /* cesta k souboru obsahujici PCAP zaznamy */
